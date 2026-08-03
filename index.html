@@ -1,0 +1,2353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minigame Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #171533;
+    --bg-mid: #201c47;
+    --panel: #2a2560;
+    --panel-edge: #191540;
+    --cream: #fdfbf7;
+    --cream-dim: #c7c3e6;
+    --coral: #ff6b6a;
+    --coral-dark: #c94443;
+    --sun: #ffc93c;
+    --sun-dark: #cc9c1e;
+    --mint: #3ddc97;
+    --mint-dark: #219f6a;
+    --sky: #4fc3f7;
+    --sky-dark: #2a8bbd;
+    --grape: #b673f5;
+    --grape-dark: #7f47b3;
+    --tangerine: #ff9f4a;
+    --tangerine-dark: #c56f24;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 20% 10%, #2a2560 0%, transparent 45%),
+      radial-gradient(circle at 85% 80%, #241f57 0%, transparent 50%),
+      var(--bg-deep);
+    font-family: 'Nunito', sans-serif;
+    color: var(--cream);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .marquee {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .marquee h1 {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: clamp(32px, 6vw, 48px);
+    margin: 0;
+    letter-spacing: 0.5px;
+    color: var(--cream);
+    text-shadow:
+      0 0 18px rgba(79, 195, 247, 0.45),
+      0 4px 0 var(--bg-deep);
+  }
+
+  .marquee .chip {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 18px;
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--cream-dim);
+  }
+
+  #screen {
+    margin-top: 32px;
+  }
+
+  /* ---- Arcade tile grid (hub) ---- */
+  .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 520px) {
+    .tile-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .tile {
+    position: relative;
+    border: none;
+    cursor: pointer;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    color: var(--cream);
+    padding: 0;
+    border-radius: 18px;
+    aspect-ratio: 1 / 0.95;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transform: translateY(-6px);
+    transition: transform 60ms ease-out;
+  }
+
+  .tile .icon { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.25)); }
+  .tile .label { font-size: 14px; padding: 0 8px; text-align: center; line-height: 1.15; }
+
+  .tile:active { transform: translateY(0); }
+
+  .tile.locked { opacity: 0.55; cursor: default; }
+  .tile.locked:active { transform: translateY(-6px); }
+
+  .tile::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    box-shadow: 0 6px 0 0 var(--tile-shadow, #000);
+    z-index: -1;
+    transform: translateY(6px);
+  }
+  .tile:active::after { transform: translateY(0px); box-shadow: 0 0px 0 0 var(--tile-shadow, #000); }
+  .tile { background: var(--tile-color, var(--coral)); }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 180ms ease-out;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---- Shared game chrome ---- */
+  .game-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .back-btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--bg-deep);
+    background: var(--cream);
+    border: none;
+    border-radius: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transform: translateY(-3px);
+    transition: transform 60ms ease-out;
+  }
+  .back-btn::after {
+    content: "";
+    position: absolute;
+  }
+  .back-btn { position: relative; box-shadow: 0 3px 0 0 #b9b6a8; }
+  .back-btn:active { transform: translateY(0); box-shadow: 0 0 0 0 #b9b6a8; }
+
+  .game-title {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+  }
+
+  .chip-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    justify-content: center;
+  }
+
+  .chip-btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--cream-dim);
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  .chip-btn.active {
+    color: var(--bg-deep);
+    background: var(--sun);
+    border-color: var(--sun-dark);
+  }
+
+  .game-panel {
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  /* ---- Tic-tac-toe ---- */
+  .ttt-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: min(320px, 80vw);
+  }
+
+  .ttt-cell {
+    aspect-ratio: 1 / 1;
+    background: var(--bg-mid);
+    border: none;
+    border-radius: 12px;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: clamp(28px, 8vw, 40px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--cream);
+  }
+  .ttt-cell.x { color: var(--sky); }
+  .ttt-cell.o { color: var(--coral); }
+  .ttt-cell.win { background: var(--mint-dark); }
+  .ttt-cell:disabled { cursor: default; }
+
+  .status-line {
+    font-weight: 800;
+    font-size: 16px;
+    min-height: 22px;
+    text-align: center;
+  }
+
+  .primary-btn {
+    position: relative;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--bg-deep);
+    background: var(--mint);
+    border: none;
+    border-radius: 14px;
+    padding: 12px 26px;
+    cursor: pointer;
+    transform: translateY(-4px);
+    box-shadow: 0 4px 0 0 var(--mint-dark);
+    transition: transform 60ms ease-out;
+  }
+  .primary-btn:active { transform: translateY(0); box-shadow: 0 0 0 0 var(--mint-dark); }
+
+  /* ---- Connect 4 ---- */
+  .c4-frame {
+    display: flex;
+    gap: 6px;
+    background: var(--sky-dark);
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .c4-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 2px;
+  }
+  .c4-col:hover { background: rgba(255,255,255,0.08); }
+  .c4-col.disabled { cursor: default; }
+  .c4-col.disabled:hover { background: none; }
+
+  .c4-cell {
+    width: min(9vw, 42px);
+    height: min(9vw, 42px);
+    border-radius: 50%;
+    background: var(--bg-deep);
+  }
+
+  .c4-disc {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--bg-deep);
+  }
+  .c4-disc.red { background: var(--coral); }
+  .c4-disc.yellow { background: var(--sun); }
+  .c4-cell.win .c4-disc.red { background: var(--coral); box-shadow: 0 0 0 3px var(--mint); }
+  .c4-cell.win .c4-disc.yellow { background: var(--sun); box-shadow: 0 0 0 3px var(--mint); }
+
+  /* ---- Snake ---- */
+  .snake-canvas {
+    border-radius: 12px;
+    touch-action: none;
+  }
+
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 48px);
+    grid-template-rows: repeat(3, 48px);
+    gap: 6px;
+  }
+
+  .dpad-btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--cream);
+    background: var(--bg-mid);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .dpad-btn:active { background: var(--sky-dark); }
+  .dpad-up { grid-column: 2; grid-row: 1; }
+  .dpad-left { grid-column: 1; grid-row: 2; }
+  .dpad-right { grid-column: 3; grid-row: 2; }
+  .dpad-down { grid-column: 2; grid-row: 3; }
+
+  /* ---- Fish Sticks ---- */
+  .fish-figure {
+    width: min(220px, 60vw);
+    height: min(160px, 44vw);
+  }
+  .fish-figure .part {
+    fill: none;
+    stroke: var(--cream);
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+
+  .fish-word {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .fish-subtext {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--cream-dim);
+    margin-top: -12px;
+  }
+  .fish-letter-box {
+    width: 30px;
+    height: 40px;
+    border-bottom: 3px solid var(--cream-dim);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    padding-bottom: 4px;
+    color: var(--cream);
+  }
+
+  .fish-keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+  .fish-row { display: flex; gap: 6px; }
+  .key-btn {
+    width: 30px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: var(--bg-mid);
+    color: var(--cream);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .key-btn.correct { background: var(--mint-dark); }
+  .key-btn.wrong { background: var(--coral-dark); opacity: 0.6; }
+  .key-btn:disabled { cursor: default; }
+
+  .banana-canvas {
+    border-radius: 12px;
+  }
+
+  .primary-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* ---- Battleship ---- */
+  .bs-boards {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .bs-board-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .bs-board-title {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .bs-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 3px;
+    width: min(280px, 80vw);
+  }
+  .bs-grid.disabled { pointer-events: none; }
+  .bs-cell {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background: var(--bg-mid);
+    border: none;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60%;
+  }
+  .bs-cell.enemy { cursor: pointer; }
+  .bs-cell.enemy:hover { background: var(--panel-edge); }
+  .bs-cell.ship { background: var(--sky-dark); }
+  .bs-cell.hit { background: var(--coral); }
+  .bs-cell.hit.sunk { background: var(--coral-dark); box-shadow: 0 0 0 2px var(--mint) inset; }
+  .bs-cell.miss::after {
+    content: '';
+    display: block;
+    width: 35%;
+    height: 35%;
+    border-radius: 50%;
+    background: var(--cream-dim);
+  }
+  .bs-cell.placeable { cursor: pointer; }
+  .bs-cell.preview-valid { box-shadow: 0 0 0 2px var(--mint) inset; }
+  .bs-cell.preview-invalid { box-shadow: 0 0 0 2px var(--coral) inset; }
+  .bs-placement-hint {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--cream-dim);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="marquee">
+    <h1>Minigame Arcade</h1>
+    <div class="chip">Pick a game to play!</div>
+  </div>
+  <div id="screen"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   GAME REGISTRY
+   Each entry describes one arcade tile. `init(container)` is
+   called when the player opens that game; it should render
+   into `container` and return an optional cleanup function.
+   To add a new minigame later: write an init() function and
+   add one entry here. That's the whole integration point.
+   ========================================================= */
+const GAMES = [
+  { id: 'maze',        name: 'Firetruck Maze',   icon: '🚒', color: 'coral',     ready: false },
+  { id: 'tictactoe',   name: 'Tic-Tac-Toe',      icon: '❌', color: 'sky',       ready: true, init: initTicTacToe },
+  { id: 'connect4',    name: 'Connect 4',        icon: '🔴', color: 'sun',       ready: true, init: initConnect4 },
+  { id: 'battleship',  name: 'Battleship',       icon: '🚢', color: 'grape',     ready: true, init: initBattleship },
+  { id: 'snake',       name: 'Snake',            icon: '🐍', color: 'mint',      ready: true, init: initSnake },
+  { id: 'pacman',      name: 'Banana Chase',     icon: '🐒', color: 'tangerine', ready: true, init: initBananaChase },
+  { id: 'dice',        name: 'Dice Games',       icon: '🎲', color: 'coral',     ready: false },
+  { id: 'fishsticks',  name: 'Fish Sticks',      icon: '🐟', color: 'sky',       ready: true, init: initFishSticks },
+  { id: 'pattern',     name: 'Pattern Game',     icon: '✨', color: 'sun',       ready: false },
+  { id: 'cardmatch',   name: 'Card Match',       icon: '🃏', color: 'grape',     ready: false },
+];
+
+const COLOR_VARS = {
+  coral:     { fill: 'var(--coral)',     shadow: 'var(--coral-dark)' },
+  sun:       { fill: 'var(--sun)',       shadow: 'var(--sun-dark)' },
+  mint:      { fill: 'var(--mint)',      shadow: 'var(--mint-dark)' },
+  sky:       { fill: 'var(--sky)',       shadow: 'var(--sky-dark)' },
+  grape:     { fill: 'var(--grape)',     shadow: 'var(--grape-dark)' },
+  tangerine: { fill: 'var(--tangerine)', shadow: 'var(--tangerine-dark)' },
+};
+
+const screenEl = document.getElementById('screen');
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1600);
+}
+
+function renderHub() {
+  screenEl.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'tile-grid';
+
+  GAMES.forEach(game => {
+    const tile = document.createElement('button');
+    tile.className = 'tile' + (game.ready ? '' : ' locked');
+    const c = COLOR_VARS[game.color];
+    tile.style.setProperty('--tile-color', c.fill);
+    tile.style.setProperty('--tile-shadow', c.shadow);
+    tile.innerHTML = `<span class="icon">${game.icon}</span><span class="label">${game.name}</span>`;
+    tile.addEventListener('click', () => {
+      if (game.ready) {
+        openGame(game);
+      } else {
+        showToast(`${game.name} is coming soon!`);
+      }
+    });
+    grid.appendChild(tile);
+  });
+
+  screenEl.appendChild(grid);
+}
+
+let activeCleanup = null;
+
+function openGame(game) {
+  screenEl.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'game-header';
+  const backBtn = document.createElement('button');
+  backBtn.className = 'back-btn';
+  backBtn.textContent = '← Back';
+  backBtn.addEventListener('click', () => {
+    if (activeCleanup) { activeCleanup(); activeCleanup = null; }
+    renderHub();
+  });
+  const title = document.createElement('div');
+  title.className = 'game-title';
+  title.textContent = game.name;
+  header.appendChild(backBtn);
+  header.appendChild(title);
+  screenEl.appendChild(header);
+
+  const container = document.createElement('div');
+  screenEl.appendChild(container);
+
+  activeCleanup = game.init(container) || null;
+}
+
+/* =========================================================
+   TIC-TAC-TOE
+   Supports Player vs Player and Player vs Computer.
+   Computer uses minimax, so it never loses.
+   ========================================================= */
+function initTicTacToe(container) {
+  let mode = 'pvp'; // 'pvp' | 'easy' | 'medium' | 'hard'
+  let board = Array(9).fill(null);
+  let current = 'X'; // human is always X vs computer
+  let gameOver = false;
+
+  const wrap = document.createElement('div');
+
+  const toggleRow = document.createElement('div');
+  toggleRow.className = 'chip-toggle';
+  const pvpBtn = makeChip('2 Players', () => setMode('pvp'));
+  const easyBtn = makeChip('Vs Computer (Easy)', () => setMode('easy'));
+  const mediumBtn = makeChip('Vs Computer (Medium)', () => setMode('medium'));
+  const hardBtn = makeChip('Vs Computer (Hard)', () => setMode('hard'));
+  const modeBtns = { pvp: pvpBtn, easy: easyBtn, medium: mediumBtn, hard: hardBtn };
+  toggleRow.appendChild(pvpBtn);
+  toggleRow.appendChild(easyBtn);
+  toggleRow.appendChild(mediumBtn);
+  toggleRow.appendChild(hardBtn);
+  wrap.appendChild(toggleRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+
+  const boardEl = document.createElement('div');
+  boardEl.className = 'ttt-board';
+  const cellEls = [];
+  for (let i = 0; i < 9; i++) {
+    const cell = document.createElement('button');
+    cell.className = 'ttt-cell';
+    cell.addEventListener('click', () => handleMove(i));
+    boardEl.appendChild(cell);
+    cellEls.push(cell);
+  }
+
+  const restartBtn = document.createElement('button');
+  restartBtn.className = 'primary-btn';
+  restartBtn.textContent = 'Play again';
+  restartBtn.addEventListener('click', resetGame);
+
+  panel.appendChild(status);
+  panel.appendChild(boardEl);
+  panel.appendChild(restartBtn);
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function setMode(m) {
+    mode = m;
+    Object.entries(modeBtns).forEach(([key, btn]) => btn.classList.toggle('active', key === m));
+    resetGame();
+  }
+  setMode('pvp');
+
+  function isComputerMode() {
+    return mode !== 'pvp';
+  }
+
+  function resetGame() {
+    board = Array(9).fill(null);
+    current = 'X';
+    gameOver = false;
+    render();
+  }
+
+  function handleMove(i) {
+    if (gameOver || board[i]) return;
+    if (isComputerMode() && current === 'O') return; // block clicks during computer turn
+    board[i] = current;
+    afterMove();
+
+    if (!gameOver && isComputerMode() && current === 'O') {
+      setTimeout(computerMove, 350);
+    }
+  }
+
+  function afterMove() {
+    const result = getWinner(board);
+    if (result) {
+      gameOver = true;
+      render(result.line);
+      status.textContent = result.winner
+        ? (isComputerMode()
+            ? (result.winner === 'X' ? 'You win! 🎉' : 'Computer wins!')
+            : `${result.winner} wins! 🎉`)
+        : "It's a draw!";
+      return;
+    }
+    current = current === 'X' ? 'O' : 'X';
+    render();
+  }
+
+  function computerMove() {
+    if (gameOver) return;
+    const emptyCells = board.map((v, idx) => (v ? null : idx)).filter(v => v !== null);
+    let i;
+    if (mode === 'easy') {
+      i = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    } else if (mode === 'medium') {
+      i = Math.random() < 0.5
+        ? emptyCells[Math.floor(Math.random() * emptyCells.length)]
+        : bestMove(board);
+    } else {
+      i = bestMove(board);
+    }
+    if (i !== -1 && i !== undefined) {
+      board[i] = 'O';
+      afterMove();
+    }
+  }
+
+  function render(winLine) {
+    cellEls.forEach((cell, i) => {
+      cell.textContent = board[i] || '';
+      cell.className = 'ttt-cell' + (board[i] === 'X' ? ' x' : board[i] === 'O' ? ' o' : '');
+      if (winLine && winLine.includes(i)) cell.classList.add('win');
+      cell.disabled = !!board[i] || gameOver || (isComputerMode() && current === 'O');
+    });
+    if (!gameOver) {
+      status.textContent = isComputerMode()
+        ? (current === 'X' ? 'Your turn (X)' : "Computer's turn...")
+        : `${current}'s turn`;
+    }
+  }
+
+  const LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function getWinner(b) {
+    for (const line of LINES) {
+      const [a, c, d] = line;
+      if (b[a] && b[a] === b[c] && b[a] === b[d]) {
+        return { winner: b[a], line };
+      }
+    }
+    if (b.every(v => v)) return { winner: null, line: null };
+    return null;
+  }
+
+  // Minimax: computer is 'O' (maximizing), human is 'X' (minimizing)
+  function bestMove(b) {
+    let best = -Infinity;
+    let move = -1;
+    for (let i = 0; i < 9; i++) {
+      if (!b[i]) {
+        b[i] = 'O';
+        const score = minimax(b, 0, false);
+        b[i] = null;
+        if (score > best) {
+          best = score;
+          move = i;
+        }
+      }
+    }
+    return move;
+  }
+
+  function minimax(b, depth, isMax) {
+    const result = getWinner(b);
+    if (result) {
+      if (result.winner === 'O') return 10 - depth;
+      if (result.winner === 'X') return depth - 10;
+      return 0;
+    }
+    if (isMax) {
+      let best = -Infinity;
+      for (let i = 0; i < 9; i++) {
+        if (!b[i]) {
+          b[i] = 'O';
+          best = Math.max(best, minimax(b, depth + 1, false));
+          b[i] = null;
+        }
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for (let i = 0; i < 9; i++) {
+        if (!b[i]) {
+          b[i] = 'X';
+          best = Math.min(best, minimax(b, depth + 1, true));
+          b[i] = null;
+        }
+      }
+      return best;
+    }
+  }
+}
+
+/* =========================================================
+   CONNECT 4
+   Supports Player vs Player and Player vs Computer.
+   Computer uses minimax with alpha-beta pruning and a
+   heuristic evaluation (it is strong but not unbeatable,
+   since full-depth search on a 7x6 board is too slow).
+   Human is always Red, computer/second player is Yellow.
+   ========================================================= */
+function initConnect4(container) {
+  const ROWS = 6, COLS = 7;
+  // Lower depth = fewer moves the computer looks ahead. randomChance = how
+  // often it ignores its own analysis and drops a piece anywhere, which is
+  // what makes Easy/Medium beatable for kids instead of just "slower Hard".
+  const DIFFICULTY = {
+    easy:   { depth: 1, randomChance: 0.6 },
+    medium: { depth: 3, randomChance: 0.2 },
+    hard:   { depth: 5, randomChance: 0 }
+  };
+  let mode = 'pvp'; // 'pvp' | 'easy' | 'medium' | 'hard'
+  let board, current, gameOver;
+
+  const wrap = document.createElement('div');
+
+  const toggleRow = document.createElement('div');
+  toggleRow.className = 'chip-toggle';
+  const pvpBtn = makeChip('2 Players', () => setMode('pvp'));
+  const easyBtn = makeChip('Vs Computer (Easy)', () => setMode('easy'));
+  const mediumBtn = makeChip('Vs Computer (Medium)', () => setMode('medium'));
+  const hardBtn = makeChip('Vs Computer (Hard)', () => setMode('hard'));
+  const modeBtns = { pvp: pvpBtn, easy: easyBtn, medium: mediumBtn, hard: hardBtn };
+  toggleRow.appendChild(pvpBtn);
+  toggleRow.appendChild(easyBtn);
+  toggleRow.appendChild(mediumBtn);
+  toggleRow.appendChild(hardBtn);
+  wrap.appendChild(toggleRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+
+  const frame = document.createElement('div');
+  frame.className = 'c4-frame';
+  const colEls = [];
+  const cellEls = [];
+  for (let c = 0; c < COLS; c++) {
+    const colEl = document.createElement('div');
+    colEl.className = 'c4-col';
+    colEl.addEventListener('click', () => handleMove(c));
+    const cellsInCol = [];
+    for (let r = 0; r < ROWS; r++) {
+      const cell = document.createElement('div');
+      cell.className = 'c4-cell';
+      const disc = document.createElement('div');
+      disc.className = 'c4-disc';
+      cell.appendChild(disc);
+      colEl.appendChild(cell);
+      cellsInCol.push(cell);
+    }
+    frame.appendChild(colEl);
+    colEls.push(colEl);
+    cellEls.push(cellsInCol);
+  }
+
+  const restartBtn = document.createElement('button');
+  restartBtn.className = 'primary-btn';
+  restartBtn.textContent = 'Play again';
+  restartBtn.addEventListener('click', resetGame);
+
+  panel.appendChild(status);
+  panel.appendChild(frame);
+  panel.appendChild(restartBtn);
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function setMode(m) {
+    mode = m;
+    Object.entries(modeBtns).forEach(([key, btn]) => btn.classList.toggle('active', key === m));
+    resetGame();
+  }
+  setMode('pvp');
+
+  function isComputerMode() {
+    return mode !== 'pvp';
+  }
+
+  function resetGame() {
+    board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    current = 'R';
+    gameOver = false;
+    render();
+  }
+
+  function getOpenRow(b, col) {
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (!b[r][col]) return r;
+    }
+    return -1;
+  }
+
+  function handleMove(col) {
+    if (gameOver) return;
+    if (isComputerMode() && current === 'Y') return; // block clicks during computer turn
+    const row = getOpenRow(board, col);
+    if (row === -1) return;
+    board[row][col] = current;
+    afterMove();
+
+    if (!gameOver && isComputerMode() && current === 'Y') {
+      setTimeout(computerMove, 350);
+    }
+  }
+
+  function afterMove() {
+    const result = checkGameOver(board);
+    if (result) {
+      gameOver = true;
+      render(result.line);
+      status.textContent = result.winner
+        ? (isComputerMode()
+            ? (result.winner === 'R' ? 'You win! 🎉' : 'Computer wins!')
+            : `${result.winner === 'R' ? 'Red' : 'Yellow'} wins! 🎉`)
+        : "It's a draw!";
+      return;
+    }
+    current = current === 'R' ? 'Y' : 'R';
+    render();
+  }
+
+  function computerMove() {
+    if (gameOver) return;
+    const validCols = [];
+    for (let c = 0; c < COLS; c++) if (getOpenRow(board, c) !== -1) validCols.push(c);
+    const { depth, randomChance } = DIFFICULTY[mode] || DIFFICULTY.hard;
+    let chosen;
+    if (Math.random() < randomChance) {
+      chosen = validCols[Math.floor(Math.random() * validCols.length)];
+    } else {
+      const [col] = minimax(board, depth, -Infinity, Infinity, true);
+      chosen = col !== null && col !== undefined ? col : validCols[0];
+    }
+    const row = getOpenRow(board, chosen);
+    board[row][chosen] = 'Y';
+    afterMove();
+  }
+
+  function render(winLine) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = cellEls[c][r];
+        const disc = cell.firstChild;
+        const val = board[r][c];
+        disc.className = 'c4-disc' + (val === 'R' ? ' red' : val === 'Y' ? ' yellow' : '');
+        cell.className = 'c4-cell';
+        if (winLine && winLine.some(([wr, wc]) => wr === r && wc === c)) {
+          cell.classList.add('win');
+        }
+      }
+    }
+    const blockInput = gameOver || (isComputerMode() && current === 'Y');
+    colEls.forEach(colEl => colEl.classList.toggle('disabled', blockInput));
+    if (!gameOver) {
+      status.textContent = isComputerMode()
+        ? (current === 'R' ? 'Your turn (Red)' : "Computer's turn...")
+        : `${current === 'R' ? 'Red' : 'Yellow'}'s turn`;
+    }
+  }
+
+  function checkGameOver(b) {
+    const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const piece = b[r][c];
+        if (!piece) continue;
+        for (const [dr, dc] of dirs) {
+          const line = [[r,c],[r+dr,c+dc],[r+2*dr,c+2*dc],[r+3*dr,c+3*dc]];
+          if (line.every(([rr, cc]) => rr>=0 && rr<ROWS && cc>=0 && cc<COLS && b[rr][cc] === piece)) {
+            return { winner: piece, line };
+          }
+        }
+      }
+    }
+    const full = b[0].every(v => v);
+    if (full) return { winner: null, line: null };
+    return null;
+  }
+
+  function scoreWindow(cells, piece) {
+    const opp = piece === 'Y' ? 'R' : 'Y';
+    const pieceCount = cells.filter(v => v === piece).length;
+    const oppCount = cells.filter(v => v === opp).length;
+    const emptyCount = cells.filter(v => !v).length;
+    let score = 0;
+    if (pieceCount === 4) score += 100;
+    else if (pieceCount === 3 && emptyCount === 1) score += 5;
+    else if (pieceCount === 2 && emptyCount === 2) score += 2;
+    if (oppCount === 3 && emptyCount === 1) score -= 4;
+    return score;
+  }
+
+  function evaluateBoard(b, piece) {
+    let score = 0;
+    const centerCol = Math.floor(COLS / 2);
+    const centerCount = b.filter(row => row[centerCol] === piece).length;
+    score += centerCount * 3;
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS - 3; c++) {
+        score += scoreWindow([b[r][c], b[r][c+1], b[r][c+2], b[r][c+3]], piece);
+      }
+    }
+    for (let c = 0; c < COLS; c++) {
+      for (let r = 0; r < ROWS - 3; r++) {
+        score += scoreWindow([b[r][c], b[r+1][c], b[r+2][c], b[r+3][c]], piece);
+      }
+    }
+    for (let r = 0; r < ROWS - 3; r++) {
+      for (let c = 0; c < COLS - 3; c++) {
+        score += scoreWindow([b[r][c], b[r+1][c+1], b[r+2][c+2], b[r+3][c+3]], piece);
+      }
+    }
+    for (let r = 3; r < ROWS; r++) {
+      for (let c = 0; c < COLS - 3; c++) {
+        score += scoreWindow([b[r][c], b[r-1][c+1], b[r-2][c+2], b[r-3][c+3]], piece);
+      }
+    }
+    return score;
+  }
+
+  // Minimax with alpha-beta pruning. AI is 'Y' (maximizing), human is 'R' (minimizing).
+  function minimax(b, depth, alpha, beta, maximizing) {
+    const validCols = [];
+    for (let c = 0; c < COLS; c++) if (getOpenRow(b, c) !== -1) validCols.push(c);
+    const result = checkGameOver(b);
+    const isTerminal = !!result || validCols.length === 0;
+
+    if (depth === 0 || isTerminal) {
+      if (isTerminal) {
+        if (result && result.winner === 'Y') return [null, 10000000];
+        if (result && result.winner === 'R') return [null, -10000000];
+        return [null, 0];
+      }
+      return [null, evaluateBoard(b, 'Y')];
+    }
+
+    if (maximizing) {
+      let value = -Infinity;
+      let bestCol = validCols[Math.floor(Math.random() * validCols.length)];
+      for (const col of validCols) {
+        const row = getOpenRow(b, col);
+        b[row][col] = 'Y';
+        const [, newScore] = minimax(b, depth - 1, alpha, beta, false);
+        b[row][col] = null;
+        if (newScore > value) { value = newScore; bestCol = col; }
+        alpha = Math.max(alpha, value);
+        if (alpha >= beta) break;
+      }
+      return [bestCol, value];
+    } else {
+      let value = Infinity;
+      let bestCol = validCols[Math.floor(Math.random() * validCols.length)];
+      for (const col of validCols) {
+        const row = getOpenRow(b, col);
+        b[row][col] = 'R';
+        const [, newScore] = minimax(b, depth - 1, alpha, beta, true);
+        b[row][col] = null;
+        if (newScore < value) { value = newScore; bestCol = col; }
+        beta = Math.min(beta, value);
+        if (alpha >= beta) break;
+      }
+      return [bestCol, value];
+    }
+  }
+}
+
+/* =========================================================
+   SNAKE
+   Real-time game loop using setInterval, rendered on canvas.
+   Controlled by arrow keys or the on-screen D-pad. Unlike the
+   click-to-place games above, this one returns a cleanup
+   function so the keyboard listener and timer are removed
+   when the player backs out to the hub.
+   ========================================================= */
+function initSnake(container) {
+  const GRID = 20;
+  const CELL = 18;
+  const SIZE = GRID * CELL;
+  const COLOR_BG = '#171533';
+  const COLOR_FOOD = '#ff6b6a';
+  const COLOR_HEAD = '#4fc3f7';
+  const COLOR_BODY = '#3ddc97';
+  const SPEEDS = { easy: 200, medium: 130, hard: 90 };
+
+  let speed = 'medium';
+  let edgeWrap = false;
+  let paused = true;
+  let snake, dir, nextDir, food, score, gameOver, timer;
+
+  const wrap = document.createElement('div');
+
+  const speedRow = document.createElement('div');
+  speedRow.className = 'chip-toggle';
+  const easyBtn = makeChip('Easy', () => setSpeed('easy'));
+  const mediumBtn = makeChip('Medium', () => setSpeed('medium'));
+  const hardBtn = makeChip('Hard', () => setSpeed('hard'));
+  const speedBtns = { easy: easyBtn, medium: mediumBtn, hard: hardBtn };
+  speedRow.appendChild(easyBtn);
+  speedRow.appendChild(mediumBtn);
+  speedRow.appendChild(hardBtn);
+  wrap.appendChild(speedRow);
+
+  const optionRow = document.createElement('div');
+  optionRow.className = 'chip-toggle';
+  const wrapBtn = makeChip('Edge wrapping: Off', toggleWrap);
+  optionRow.appendChild(wrapBtn);
+  wrap.appendChild(optionRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'snake-canvas';
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  const dpad = document.createElement('div');
+  dpad.className = 'dpad';
+  const upBtn = makeDpadBtn('dpad-up', '↑', 0, -1);
+  const leftBtn = makeDpadBtn('dpad-left', '←', -1, 0);
+  const rightBtn = makeDpadBtn('dpad-right', '→', 1, 0);
+  const downBtn = makeDpadBtn('dpad-down', '↓', 0, 1);
+  dpad.appendChild(upBtn);
+  dpad.appendChild(leftBtn);
+  dpad.appendChild(rightBtn);
+  dpad.appendChild(downBtn);
+
+  const restartBtn = document.createElement('button');
+  restartBtn.className = 'primary-btn';
+  restartBtn.textContent = 'Play again';
+  restartBtn.addEventListener('click', resetGame);
+
+  panel.appendChild(status);
+  panel.appendChild(canvas);
+  panel.appendChild(dpad);
+  panel.appendChild(restartBtn);
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function makeDpadBtn(cls, label, dx, dy) {
+    const b = document.createElement('button');
+    b.className = 'dpad-btn ' + cls;
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      if (gameOver) return;
+      if (paused) resumeGame();
+      setDir(dx, dy);
+    });
+    return b;
+  }
+
+  function setSpeed(s) {
+    speed = s;
+    Object.entries(speedBtns).forEach(([key, btn]) => btn.classList.toggle('active', key === s));
+    resetGame();
+  }
+
+  function toggleWrap() {
+    edgeWrap = !edgeWrap;
+    wrapBtn.textContent = `Edge wrapping: ${edgeWrap ? 'On' : 'Off'}`;
+    wrapBtn.classList.toggle('active', edgeWrap);
+  }
+
+  function setDir(x, y) {
+    if (dir.x === -x && dir.y === -y) return; // no reversing into yourself
+    nextDir = { x, y };
+  }
+
+  function pauseGame() {
+    if (gameOver || paused) return;
+    paused = true;
+    clearInterval(timer);
+    status.textContent = `Paused — press any key to resume (Score: ${score})`;
+  }
+
+  function resumeGame() {
+    if (gameOver || !paused) return;
+    paused = false;
+    timer = setInterval(tick, SPEEDS[speed]);
+    status.textContent = `Score: ${score}`;
+  }
+
+  function keyHandler(e) {
+    const map = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+    const isArrow = !!map[e.key];
+    if (gameOver) return;
+
+    if (paused) {
+      if (isArrow) e.preventDefault();
+      resumeGame();
+      if (isArrow) setDir(map[e.key][0], map[e.key][1]);
+      return;
+    }
+
+    if (isArrow) {
+      e.preventDefault();
+      setDir(map[e.key][0], map[e.key][1]);
+    } else {
+      pauseGame();
+    }
+  }
+  window.addEventListener('keydown', keyHandler);
+
+  function resetGame() {
+    snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+    dir = { x: 1, y: 0 };
+    nextDir = { x: 1, y: 0 };
+    score = 0;
+    gameOver = false;
+    paused = true;
+    placeFood();
+    status.textContent = 'Press any key to start';
+    if (timer) clearInterval(timer);
+    timer = null;
+    draw();
+  }
+  setSpeed('medium');
+
+  function placeFood() {
+    let pos;
+    do {
+      pos = { x: Math.floor(Math.random() * GRID), y: Math.floor(Math.random() * GRID) };
+    } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+    food = pos;
+  }
+
+  function tick() {
+    if (gameOver) return;
+    dir = nextDir;
+    let head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+    if (edgeWrap) {
+      head = { x: (head.x + GRID) % GRID, y: (head.y + GRID) % GRID };
+    }
+    const hitsWall = !edgeWrap && (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID);
+    const hitsSelf = snake.some(s => s.x === head.x && s.y === head.y);
+    if (hitsWall || hitsSelf) {
+      endGame();
+      return;
+    }
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      placeFood();
+    } else {
+      snake.pop();
+    }
+    status.textContent = `Score: ${score}`;
+    draw();
+  }
+
+  function endGame() {
+    gameOver = true;
+    clearInterval(timer);
+    status.textContent = `Game over! Score: ${score}`;
+  }
+
+  function draw() {
+    ctx.fillStyle = COLOR_BG;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+
+    ctx.fillStyle = COLOR_FOOD;
+    ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
+
+    snake.forEach((s, i) => {
+      ctx.fillStyle = i === 0 ? COLOR_HEAD : COLOR_BODY;
+      ctx.fillRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2);
+    });
+  }
+
+  return function cleanup() {
+    clearInterval(timer);
+    window.removeEventListener('keydown', keyHandler);
+  };
+}
+
+/* =========================================================
+   FISH STICKS
+   A hangman-style word game themed around building a fish
+   skeleton out of "stick" bones instead of a hanging figure.
+   Word banks are grouped by grade level. The Grade 1-5 lists
+   are drawn from published grade-level spelling word research
+   (the word progressions summarized at readingrockets.org,
+   citing Graham, Harris & Loynachan, 1993), supplemented with
+   additional common words of the same difficulty band to reach
+   100 words per grade; the Kindergarten list is built from
+   simple, common CVC/sight words.
+   ========================================================= */
+const WORD_BANKS = {
+  kindergarten: ['art','axe','bag','box','boy','bug','bus','can','car','cat','cop','cub','cut','den','dig','dog','ear','eat','egg','elf','elk','eye','fan','far','fat','fed','few','fig','fin','fog','fry','gap','guy','hat','hen','hog','hop','ice','ivy','jar','jet','jug','kid','kit','lap','lay','leg','low','map','mat','mix','mud','nap','now','oak','odd','off','one','owe','pad','pat','pen','pie','pig','pit','pop','pro','ram','ran','rat','ray','red','rim','rip','rod','rot','rug','run','sad','saw','sea','sit','sob','sty','sub','sum','tan','tin','ton','top','toy','try','tug','wag','wax','wig','win','yes','zip','zoo'],
+  grade1: ['all','and','ball','bark','bed','bell','bend','bent','bike','bird','boat','bond','book','box','boy','bug','cake','came','can','cap','car','coat','come','cow','cup','day','desk','did','dog','drum','fat','flag','for','frog','fun','get','gift','got','had','hand','hen','here','hill','him','home','hot','into','its','jump','kite','lamp','let','like','lion','look','man','may','milk','mom','moon','nest','nose','old','one','pail','pan','path','pig','play','pool','ran','red','ride','road','rock','run','sat','see','seed','she','shed','ship','shop','sit','sock','star','sun','tent','the','this','toe','top','toy','two','was','wave','will','yard','yes','zone'],
+  grade2: ['about','any','bad','base','best','black','blue','bring','brother','change','child','cold','coming','corn','could','deep','deer','doing','down','dress','duck','each','eat','eating','egg','fast','feel','fire','fix','full','game','gave','goat','going','gold','gone','have','hear','help','here','hill','horse','how','job','keep','land','left','line','live','looking','lost','mad','most','must','myself','nail','new','night','nine','now','nut','off','outside','part','pay','pick','playing','post','rain','read','rock','same','saw','say','seat','ship','shoe','show','side','sing','sleep','small','snow','spell','start','store','story','tall','that','think','three','today','told','tree','wash','went','wet','while','wish','woke'],
+  grade3: ['able','afternoon','age','airplane','almost','alone','also','anything','art','basket','because','below','belt','birthday','body','broke','care','close','coal','dishes','draw','dream','earth','every','eyes','face','few','fight','flying','follow','found','fourth','free','friend','getting','given','grandmother','great','grew','hair','high','hurt','kids','kitten','knife','large','learn','loving','might','mind','month','music','near','noise','often','order','party','pass','penny','picture','plane','please','reach','rich','right','salt','sent','sew','short','sitting','sixth','something','sometime','spelling','spent','stand','step','stove','street','study','sugar','taking','team','teeth','thinking','those','throw','trip','twelve','twenty','wait','watch','weather','wheat','which','wild','without','word','world','year'],
+  grade4: ['across','against','answer','awhile','between','board','bottom','breakfast','broken','build','building','built','captain','carried','caught','charge','chicken','circus','cities','clothes','company','country','discover','doctor','dollar','during','eighth','else','enjoy','enough','everybody','example','excuse','field','fifth','finish','following','good','group','happened','harden','heavy','held','hospital','idea','instead','known','laugh','middle','minute','mountain','ninth','ocean','office','parent','peanut','pencil','picnic','police','pretty','prize','quite','radio','raise','really','reason','remember','return','saturday','scare','second','since','slowly','stories','student','sudden','suit','sure','though','threw','tired','together','tomorrow','toward','tried','trouble','truly','turtle','until','village','visit','wear','whole','whose','women','writing','written','wrote','yell','young'],
+  grade5: ['address','adventure','announce','appreciate','arrive','attention','authority','balance','beautiful','behavior','calendar','challenge','character','circumstance','climate','complete','condition','confidence','conscience','consistent','continue','convince','countries','courage','cousin','curious','dangerous','decide','determine','difficulty','discuss','document','effort','emergency','environment','especially','exercise','experience','explain','extraordinary','fascinate','generous','gradually','guarantee','guardian','harmony','historical','horizon','huge','immediately','important','influence','information','interrupt','language','magnificent','memory','mention','naturally','necessary','neighborhood','nervous','obedient','occasion','official','origin','outstanding','passenger','permission','planet','population','possess','prepare','present','probable','probably','produce','promise','quality','recognize','region','remarkable','represent','ridiculous','satisfy','separate','situation','society','suddenly','supervise','suppose','surely','suspicious','technique','temperature','unusual','vehicle','victory','volunteer','wonder'],
+};
+
+const GRADE_LABELS = {
+  kindergarten: 'Kindergarten',
+  grade1: 'Grade 1',
+  grade2: 'Grade 2',
+  grade3: 'Grade 3',
+  grade4: 'Grade 4',
+  grade5: 'Grade 5',
+};
+
+// More allowed wrong guesses = easier. Younger grades get more segments of
+// slack (8 bones to build before the fish is "done"); older grades get
+// fewer (6), keeping it equivalent in difficulty to standard hangman.
+const GRADE_MAX_WRONG = {
+  kindergarten: 8,
+  grade1: 8,
+  grade2: 7,
+  grade3: 7,
+  grade4: 6,
+  grade5: 6,
+};
+
+// Eight fish-skeleton "bone" segments, revealed left to right as the
+// player guesses wrong. Grades with fewer allowed wrong guesses simply
+// never reveal the last one or two bones before the round ends.
+const FISH_PARTS = [
+  { tag: 'circle', attrs: { cx: 26, cy: 60, r: 13 } },
+  { tag: 'path', attrs: { d: 'M39 60 H70' } },
+  { tag: 'path', attrs: { d: 'M55 60 L45 40' } },
+  { tag: 'path', attrs: { d: 'M55 60 L45 80' } },
+  { tag: 'path', attrs: { d: 'M70 60 H120' } },
+  { tag: 'path', attrs: { d: 'M100 60 L90 42' } },
+  { tag: 'path', attrs: { d: 'M100 60 L90 78' } },
+  { tag: 'path', attrs: { d: 'M120 60 L150 45 M120 60 L150 75' } },
+];
+
+function initFishSticks(container) {
+  const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+
+  let grade = 'kindergarten';
+  let maxWrong = GRADE_MAX_WRONG[grade];
+  let word, guessed, wrongCount, gameOver;
+
+  const wrap = document.createElement('div');
+
+  const gradeRow = document.createElement('div');
+  gradeRow.className = 'chip-toggle';
+  const gradeBtns = {};
+  Object.keys(WORD_BANKS).forEach(key => {
+    const btn = makeChip(GRADE_LABELS[key], () => setGrade(key));
+    gradeBtns[key] = btn;
+    gradeRow.appendChild(btn);
+  });
+  wrap.appendChild(gradeRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+
+  const guessesLeftEl = document.createElement('div');
+  guessesLeftEl.className = 'fish-subtext';
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const figure = document.createElementNS(svgNS, 'svg');
+  figure.setAttribute('viewBox', '0 0 170 120');
+  figure.setAttribute('class', 'fish-figure');
+  const parts = FISH_PARTS.map(spec => {
+    const el = document.createElementNS(svgNS, spec.tag);
+    el.setAttribute('class', 'part');
+    Object.entries(spec.attrs).forEach(([k, v]) => el.setAttribute(k, v));
+    el.style.display = 'none';
+    figure.appendChild(el);
+    return el;
+  });
+
+  const wordEl = document.createElement('div');
+  wordEl.className = 'fish-word';
+
+  const keyboard = document.createElement('div');
+  keyboard.className = 'fish-keyboard';
+  const keyBtns = {};
+  KEY_ROWS.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'fish-row';
+    row.split('').forEach(letter => {
+      const btn = document.createElement('button');
+      btn.className = 'key-btn';
+      btn.textContent = letter.toUpperCase();
+      btn.addEventListener('click', () => guessLetter(letter));
+      keyBtns[letter] = btn;
+      rowEl.appendChild(btn);
+    });
+    keyboard.appendChild(rowEl);
+  });
+
+  const restartBtn = document.createElement('button');
+  restartBtn.className = 'primary-btn';
+  restartBtn.textContent = 'New word';
+  restartBtn.addEventListener('click', resetGame);
+
+  panel.appendChild(status);
+  panel.appendChild(guessesLeftEl);
+  panel.appendChild(figure);
+  panel.appendChild(wordEl);
+  panel.appendChild(keyboard);
+  panel.appendChild(restartBtn);
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function setGrade(g) {
+    grade = g;
+    maxWrong = GRADE_MAX_WRONG[g];
+    Object.entries(gradeBtns).forEach(([key, btn]) => btn.classList.toggle('active', key === g));
+    resetGame();
+  }
+  setGrade('kindergarten');
+
+  function resetGame() {
+    const bank = WORD_BANKS[grade];
+    word = bank[Math.floor(Math.random() * bank.length)];
+    guessed = new Set();
+    wrongCount = 0;
+    gameOver = false;
+    status.textContent = 'Guess a letter!';
+    guessesLeftEl.textContent = `Guesses left: ${maxWrong}`;
+    parts.forEach(p => { p.style.display = 'none'; });
+    Object.values(keyBtns).forEach(btn => {
+      btn.disabled = false;
+      btn.className = 'key-btn';
+    });
+    renderWord();
+  }
+
+  function guessLetter(letter) {
+    if (gameOver || guessed.has(letter)) return;
+    guessed.add(letter);
+    const btn = keyBtns[letter];
+    if (word.includes(letter)) {
+      btn.classList.add('correct');
+    } else {
+      btn.classList.add('wrong');
+      wrongCount++;
+      guessesLeftEl.textContent = `Guesses left: ${Math.max(0, maxWrong - wrongCount)}`;
+      if (wrongCount <= parts.length) parts[wrongCount - 1].style.display = '';
+    }
+    btn.disabled = true;
+    renderWord();
+    checkEnd();
+  }
+
+  function renderWord() {
+    wordEl.innerHTML = '';
+    word.split('').forEach(letter => {
+      const box = document.createElement('div');
+      box.className = 'fish-letter-box';
+      box.textContent = guessed.has(letter) ? letter.toUpperCase() : '';
+      wordEl.appendChild(box);
+    });
+  }
+
+  function checkEnd() {
+    const won = word.split('').every(letter => guessed.has(letter));
+    if (won) {
+      gameOver = true;
+      status.textContent = 'You got it! 🎉';
+      lockKeyboard();
+    } else if (wrongCount >= maxWrong) {
+      gameOver = true;
+      status.textContent = `Out of guesses! The word was "${word.toUpperCase()}"`;
+      lockKeyboard();
+    }
+  }
+
+  function lockKeyboard() {
+    Object.values(keyBtns).forEach(btn => { btn.disabled = true; });
+  }
+}
+
+/* =========================================================
+   BANANA CHASE
+   A Pac-Man-style clone: a monkey collects bananas around a
+   maze while spiders chase him using shortest-path (BFS)
+   movement, with a little randomness mixed in so it stays
+   beatable. The maze is generated as a grid of evenly-spaced
+   single-cell pillars, which guarantees full connectivity and
+   loops (multiple routes around each pillar) without needing
+   a hand-authored layout.
+   ========================================================= */
+function initBananaChase(container) {
+  const COLS = 19, ROWS = 15, CELL = 22;
+  const SIZE_W = COLS * CELL, SIZE_H = ROWS * CELL;
+  const MONKEY_TICK_MS = 210;   // monkey moves at a moderate, slightly-faster-than-spider pace
+  const SPIDER_TICK_MS = 340;   // roughly half the speed of the original single shared tick (170ms)
+  const SPIDER_WAKE_SCORE = 10; // spiders stay put until this many bananas are collected
+  const SPIDER_RANDOM_CHANCE = 0.15;
+  const SPIDER_COUNTS = { easy: 1, medium: 3, hard: 5 };
+  // Ordered so slicing the first N gives a sensible spread at every spider count
+  const SPIDER_START_ORDER = [{ x: 9, y: 7 }, { x: 7, y: 7 }, { x: 11, y: 7 }, { x: 5, y: 7 }, { x: 13, y: 7 }];
+  const DIRS = [{ x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 }];
+
+  let difficulty = 'medium';
+  let maze, bananas, monkey, monkeyDir, monkeyNextDir, spiders, score, gameOver;
+  let monkeyTimer, spiderTimer;
+
+  const wrap = document.createElement('div');
+
+  const diffRow = document.createElement('div');
+  diffRow.className = 'chip-toggle';
+  const easyBtn = makeChip('Easy (1 spider)', () => setDifficulty('easy'));
+  const mediumBtn = makeChip('Medium (3 spiders)', () => setDifficulty('medium'));
+  const hardBtn = makeChip('Hard (5 spiders)', () => setDifficulty('hard'));
+  const diffBtns = { easy: easyBtn, medium: mediumBtn, hard: hardBtn };
+  diffRow.appendChild(easyBtn);
+  diffRow.appendChild(mediumBtn);
+  diffRow.appendChild(hardBtn);
+  wrap.appendChild(diffRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'banana-canvas';
+  canvas.width = SIZE_W;
+  canvas.height = SIZE_H;
+  const ctx = canvas.getContext('2d');
+
+  const dpad = document.createElement('div');
+  dpad.className = 'dpad';
+  const upBtn = makeDpadBtn('dpad-up', '↑', 0, -1);
+  const leftBtn = makeDpadBtn('dpad-left', '←', -1, 0);
+  const rightBtn = makeDpadBtn('dpad-right', '→', 1, 0);
+  const downBtn = makeDpadBtn('dpad-down', '↓', 0, 1);
+  dpad.appendChild(upBtn);
+  dpad.appendChild(leftBtn);
+  dpad.appendChild(rightBtn);
+  dpad.appendChild(downBtn);
+
+  const restartBtn = document.createElement('button');
+  restartBtn.className = 'primary-btn';
+  restartBtn.textContent = 'Play again';
+  restartBtn.addEventListener('click', resetGame);
+
+  panel.appendChild(status);
+  panel.appendChild(canvas);
+  panel.appendChild(dpad);
+  panel.appendChild(restartBtn);
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function setDifficulty(d) {
+    difficulty = d;
+    Object.entries(diffBtns).forEach(([key, btn]) => btn.classList.toggle('active', key === d));
+    resetGame();
+  }
+
+  function makeDpadBtn(cls, label, dx, dy) {
+    const b = document.createElement('button');
+    b.className = 'dpad-btn ' + cls;
+    b.textContent = label;
+    b.addEventListener('click', () => { monkeyNextDir = { x: dx, y: dy }; });
+    return b;
+  }
+
+  function keyHandler(e) {
+    const map = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+    if (map[e.key]) {
+      e.preventDefault();
+      monkeyNextDir = { x: map[e.key][0], y: map[e.key][1] };
+    }
+  }
+  window.addEventListener('keydown', keyHandler);
+
+  function buildMaze() {
+    const grid = [];
+    for (let r = 0; r < ROWS; r++) {
+      const row = [];
+      for (let c = 0; c < COLS; c++) {
+        const isBorder = r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1;
+        const isPillar = r % 2 === 0 && c % 2 === 0;
+        row.push((isBorder || isPillar) ? 1 : 0);
+      }
+      grid.push(row);
+    }
+    return grid;
+  }
+
+  function isWall(r, c) {
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return true;
+    return maze[r][c] === 1;
+  }
+
+  function resetGame() {
+    maze = buildMaze();
+    bananas = new Set();
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] === 0) bananas.add(r + ',' + c);
+      }
+    }
+    monkey = { x: 9, y: 11 };
+    monkeyDir = { x: 0, y: 0 };
+    monkeyNextDir = { x: 0, y: 0 };
+    bananas.delete(monkey.y + ',' + monkey.x);
+
+    const numSpiders = SPIDER_COUNTS[difficulty];
+    spiders = SPIDER_START_ORDER.slice(0, numSpiders).map(p => ({ x: p.x, y: p.y }));
+    spiders.forEach(s => bananas.delete(s.y + ',' + s.x));
+
+    score = 0;
+    gameOver = false;
+    status.textContent = `Collect ${SPIDER_WAKE_SCORE} bananas before the spiders wake up!`;
+    if (monkeyTimer) clearInterval(monkeyTimer);
+    if (spiderTimer) clearInterval(spiderTimer);
+    monkeyTimer = setInterval(monkeyTick, MONKEY_TICK_MS);
+    spiderTimer = setInterval(spiderTick, SPIDER_TICK_MS);
+    draw();
+  }
+  setDifficulty('medium');
+
+  function monkeyTick() {
+    if (gameOver) return;
+
+    if (!isWall(monkey.y + monkeyNextDir.y, monkey.x + monkeyNextDir.x)) {
+      monkeyDir = monkeyNextDir;
+    }
+    if (!isWall(monkey.y + monkeyDir.y, monkey.x + monkeyDir.x)) {
+      monkey = { x: monkey.x + monkeyDir.x, y: monkey.y + monkeyDir.y };
+    }
+    const key = monkey.y + ',' + monkey.x;
+    if (bananas.has(key)) {
+      bananas.delete(key);
+      score++;
+    }
+
+    if (spiders.some(s => s.x === monkey.x && s.y === monkey.y)) {
+      endGame(false);
+      return;
+    }
+    if (bananas.size === 0) {
+      endGame(true);
+      return;
+    }
+    draw();
+    if (score < SPIDER_WAKE_SCORE) {
+      status.textContent = `Collect ${SPIDER_WAKE_SCORE - score} more before the spiders wake up! Score: ${score}`;
+    } else {
+      status.textContent = `Bananas collected: ${score}`;
+    }
+  }
+
+  function spiderTick() {
+    if (gameOver) return;
+    if (score < SPIDER_WAKE_SCORE) return; // spiders stay asleep until the wake threshold
+
+    moveSpiders();
+
+    if (spiders.some(s => s.x === monkey.x && s.y === monkey.y)) {
+      endGame(false);
+      return;
+    }
+    draw();
+  }
+
+  function moveSpiders() {
+    spiders.forEach(s => {
+      const dir = Math.random() < SPIDER_RANDOM_CHANCE
+        ? randomValidDir(s)
+        : bfsNextStep(s, monkey);
+      if (dir) {
+        const nx = s.x + dir.x, ny = s.y + dir.y;
+        if (!isWall(ny, nx)) { s.x = nx; s.y = ny; }
+      }
+    });
+  }
+
+  function randomValidDir(pos) {
+    const valid = DIRS.filter(d => !isWall(pos.y + d.y, pos.x + d.x));
+    if (valid.length === 0) return null;
+    return valid[Math.floor(Math.random() * valid.length)];
+  }
+
+  // Breadth-first search from a spider to the monkey; returns the direction
+  // of the first step along the shortest path.
+  function bfsNextStep(start, goal) {
+    const key = (x, y) => x + ',' + y;
+    const visited = new Set([key(start.x, start.y)]);
+    const queue = [{ x: start.x, y: start.y, first: null }];
+    let head = 0;
+    while (head < queue.length) {
+      const cur = queue[head++];
+      if (cur.x === goal.x && cur.y === goal.y) {
+        return cur.first || { x: 0, y: 0 };
+      }
+      for (const d of DIRS) {
+        const nx = cur.x + d.x, ny = cur.y + d.y;
+        if (isWall(ny, nx)) continue;
+        const k = key(nx, ny);
+        if (visited.has(k)) continue;
+        visited.add(k);
+        queue.push({ x: nx, y: ny, first: cur.first || d });
+      }
+    }
+    return null;
+  }
+
+  function endGame(playerWon) {
+    gameOver = true;
+    clearInterval(monkeyTimer);
+    clearInterval(spiderTimer);
+    status.textContent = playerWon
+      ? `You collected every banana! 🎉 Score: ${score}`
+      : `A spider caught you! Score: ${score}`;
+    draw();
+  }
+
+  function draw() {
+    ctx.fillStyle = '#171533';
+    ctx.fillRect(0, 0, SIZE_W, SIZE_H);
+
+    ctx.fillStyle = '#2a2560';
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] === 1) ctx.fillRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
+      }
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.font = `${Math.floor(CELL * 0.6)}px sans-serif`;
+    bananas.forEach(k => {
+      const [r, c] = k.split(',').map(Number);
+      ctx.fillText('🍌', c * CELL + CELL / 2, r * CELL + CELL / 2);
+    });
+
+    ctx.font = `${Math.floor(CELL * 0.85)}px sans-serif`;
+    spiders.forEach(s => ctx.fillText('🕷️', s.x * CELL + CELL / 2, s.y * CELL + CELL / 2));
+
+    ctx.font = `${Math.floor(CELL * 0.9)}px sans-serif`;
+    ctx.fillText('🐒', monkey.x * CELL + CELL / 2, monkey.y * CELL + CELL / 2);
+  }
+
+  return function cleanup() {
+    clearInterval(monkeyTimer);
+    clearInterval(spiderTimer);
+    window.removeEventListener('keydown', keyHandler);
+  };
+}
+
+/* =========================================================
+   BATTLESHIP
+   Player vs computer only. Difficulty affects two independent
+   things at once, as requested:
+   1. How smart the computer's shots are (random on Easy; on
+      Medium/Hard it hunts adjacent cells after a hit to finish
+      off a ship; on Hard it additionally avoids cells next to
+      its own past misses while searching for a new ship).
+   2. How much the game tells the player about their own shots
+      against the hidden computer fleet (full ship names on
+      Easy, an unnamed sink count on Medium, just "Hit!" with
+      no sink info at all on Hard).
+   Note: feedback about the COMPUTER's shots against the
+   player's own board is always fully shown, since the player
+   can already see their own ship layout regardless of mode.
+   ========================================================= */
+const BS_SHIPS = [
+  { id: 'carrier', name: 'Carrier', size: 5 },
+  { id: 'battleship', name: 'Battleship', size: 4 },
+  { id: 'cruiser', name: 'Cruiser', size: 3 },
+  { id: 'submarine', name: 'Submarine', size: 3 },
+  { id: 'destroyer', name: 'Destroyer', size: 2 },
+];
+const BS_SIZE = 10;
+
+function initBattleship(container) {
+  let difficulty = 'easy';
+  let phase = 'placement'; // 'placement' | 'battle'
+  let playerBoard, computerBoard, playerShips, computerShips;
+  let gameOver, isPlayerTurn, sunkCount;
+  let activeShipId, orientation, hoverCell;
+  const placementCellEls = [];
+  const ownCellEls = [];
+  const enemyCellEls = [];
+  const shipChipEls = {};
+
+  const wrap = document.createElement('div');
+
+  const diffRow = document.createElement('div');
+  diffRow.className = 'chip-toggle';
+  const easyBtn = makeChip('Easy', () => setDifficulty('easy'));
+  const mediumBtn = makeChip('Medium', () => setDifficulty('medium'));
+  const hardBtn = makeChip('Hard', () => setDifficulty('hard'));
+  const diffBtns = { easy: easyBtn, medium: mediumBtn, hard: hardBtn };
+  diffRow.appendChild(easyBtn);
+  diffRow.appendChild(mediumBtn);
+  diffRow.appendChild(hardBtn);
+  wrap.appendChild(diffRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+  panel.appendChild(status);
+
+  /* ---------------- Placement phase UI ---------------- */
+  const placementSection = document.createElement('div');
+  placementSection.style.display = 'flex';
+  placementSection.style.flexDirection = 'column';
+  placementSection.style.alignItems = 'center';
+  placementSection.style.gap = '16px';
+
+  const placementHint = document.createElement('div');
+  placementHint.className = 'bs-placement-hint';
+  placementHint.textContent = 'Pick a ship below, then click the grid to place it. Click a placed ship to move or rotate it.';
+  placementSection.appendChild(placementHint);
+
+  const placementGrid = document.createElement('div');
+  placementGrid.className = 'bs-grid';
+  for (let r = 0; r < BS_SIZE; r++) {
+    const rowEls = [];
+    for (let c = 0; c < BS_SIZE; c++) {
+      const cell = document.createElement('button');
+      cell.className = 'bs-cell placeable';
+      cell.addEventListener('mouseenter', () => { hoverCell = { r, c }; renderPlacementBoard(); });
+      cell.addEventListener('mouseleave', () => { hoverCell = null; renderPlacementBoard(); });
+      cell.addEventListener('click', () => handlePlacementClick(r, c));
+      placementGrid.appendChild(cell);
+      rowEls.push(cell);
+    }
+    placementCellEls.push(rowEls);
+  }
+  placementSection.appendChild(placementGrid);
+
+  const shipChipRow = document.createElement('div');
+  shipChipRow.className = 'chip-toggle';
+  BS_SHIPS.forEach(meta => {
+    const chip = makeChip(shipLabel(meta, false), () => {
+      activeShipId = meta.id;
+      renderShipChips();
+      renderPlacementBoard();
+    });
+    shipChipEls[meta.id] = chip;
+    shipChipRow.appendChild(chip);
+  });
+  placementSection.appendChild(shipChipRow);
+
+  const actionRow = document.createElement('div');
+  actionRow.className = 'chip-toggle';
+  const rotateBtn = makeChip('Rotate ⤾', () => {
+    orientation = orientation === 'h' ? 'v' : 'h';
+    renderPlacementBoard();
+  });
+  const randomizeBtn = makeChip('Randomize remaining', () => {
+    placeRemainingRandomly();
+    renderPlacementBoard();
+    renderShipChips();
+    updateStartBtn();
+  });
+  const clearBtn = makeChip('Clear all', () => {
+    playerBoard = createEmptyBoard();
+    playerShips = {};
+    renderPlacementBoard();
+    renderShipChips();
+    updateStartBtn();
+  });
+  actionRow.appendChild(rotateBtn);
+  actionRow.appendChild(randomizeBtn);
+  actionRow.appendChild(clearBtn);
+  placementSection.appendChild(actionRow);
+
+  const startBtn = document.createElement('button');
+  startBtn.className = 'primary-btn';
+  startBtn.textContent = 'Start Battle';
+  startBtn.addEventListener('click', startBattle);
+  placementSection.appendChild(startBtn);
+
+  panel.appendChild(placementSection);
+
+  /* ---------------- Battle phase UI ---------------- */
+  const battleSection = document.createElement('div');
+  battleSection.style.display = 'none';
+  battleSection.style.flexDirection = 'column';
+  battleSection.style.alignItems = 'center';
+  battleSection.style.gap = '20px';
+
+  const boards = document.createElement('div');
+  boards.className = 'bs-boards';
+
+  // Enemy board is listed first so it renders above the player's own board.
+  const enemyCol = document.createElement('div');
+  enemyCol.className = 'bs-board-col';
+  const enemyTitle = document.createElement('div');
+  enemyTitle.className = 'bs-board-title';
+  enemyTitle.textContent = 'Enemy Waters';
+  const enemyGrid = document.createElement('div');
+  enemyGrid.className = 'bs-grid';
+
+  const ownCol = document.createElement('div');
+  ownCol.className = 'bs-board-col';
+  const ownTitle = document.createElement('div');
+  ownTitle.className = 'bs-board-title';
+  ownTitle.textContent = 'Your Fleet';
+  const ownGrid = document.createElement('div');
+  ownGrid.className = 'bs-grid';
+
+  for (let r = 0; r < BS_SIZE; r++) {
+    const ownRowEls = [];
+    const enemyRowEls = [];
+    for (let c = 0; c < BS_SIZE; c++) {
+      const ownCell = document.createElement('div');
+      ownCell.className = 'bs-cell';
+      ownGrid.appendChild(ownCell);
+      ownRowEls.push(ownCell);
+
+      const enemyCell = document.createElement('button');
+      enemyCell.className = 'bs-cell enemy';
+      enemyCell.addEventListener('click', () => handleEnemyClick(r, c));
+      enemyGrid.appendChild(enemyCell);
+      enemyRowEls.push(enemyCell);
+    }
+    ownCellEls.push(ownRowEls);
+    enemyCellEls.push(enemyRowEls);
+  }
+
+  enemyCol.appendChild(enemyTitle);
+  enemyCol.appendChild(enemyGrid);
+  ownCol.appendChild(ownTitle);
+  ownCol.appendChild(ownGrid);
+  boards.appendChild(enemyCol);
+  boards.appendChild(ownCol);
+  battleSection.appendChild(boards);
+
+  const newGameBtn = document.createElement('button');
+  newGameBtn.className = 'primary-btn';
+  newGameBtn.textContent = 'New game';
+  newGameBtn.addEventListener('click', resetToPlacement);
+  battleSection.appendChild(newGameBtn);
+
+  panel.appendChild(battleSection);
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  /* ---------------- Shared helpers ---------------- */
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function shipLabel(meta, placed) {
+    return `${meta.name} (${meta.size})${placed ? ' ✓' : ''}`;
+  }
+
+  function setDifficulty(d) {
+    difficulty = d;
+    Object.entries(diffBtns).forEach(([key, btn]) => btn.classList.toggle('active', key === d));
+  }
+  setDifficulty('easy');
+
+  function inBounds(r, c) {
+    return r >= 0 && r < BS_SIZE && c >= 0 && c < BS_SIZE;
+  }
+
+  function createEmptyBoard() {
+    return Array.from({ length: BS_SIZE }, () =>
+      Array.from({ length: BS_SIZE }, () => ({ shipId: null, hit: false }))
+    );
+  }
+
+  function placeFleet(board) {
+    const ships = {};
+    BS_SHIPS.forEach(meta => {
+      let placed = false;
+      while (!placed) {
+        const horizontal = Math.random() < 0.5;
+        const r = Math.floor(Math.random() * (horizontal ? BS_SIZE : BS_SIZE - meta.size + 1));
+        const c = Math.floor(Math.random() * (horizontal ? BS_SIZE - meta.size + 1 : BS_SIZE));
+        const cells = [];
+        for (let i = 0; i < meta.size; i++) {
+          cells.push(horizontal ? { r, c: c + i } : { r: r + i, c });
+        }
+        if (cells.every(p => board[p.r][p.c].shipId === null)) {
+          cells.forEach(p => { board[p.r][p.c].shipId = meta.id; });
+          ships[meta.id] = { name: meta.name, size: meta.size, cells, hits: 0 };
+          placed = true;
+        }
+      }
+    });
+    return ships;
+  }
+
+  function fireAt(board, ships, r, c) {
+    const cell = board[r][c];
+    if (cell.hit) return { result: 'already' };
+    cell.hit = true;
+    if (cell.shipId) {
+      const ship = ships[cell.shipId];
+      ship.hits++;
+      return { result: 'hit', shipId: cell.shipId, shipName: ship.name, sunk: ship.hits >= ship.size };
+    }
+    return { result: 'miss' };
+  }
+
+  function allSunk(ships) {
+    return Object.values(ships).every(s => s.hits >= s.size);
+  }
+
+  /* ---------------- Placement phase logic ---------------- */
+  function firstUnplacedShipId() {
+    const found = BS_SHIPS.find(meta => !playerShips[meta.id]);
+    return found ? found.id : null;
+  }
+
+  function resetToPlacement() {
+    phase = 'placement';
+    playerBoard = createEmptyBoard();
+    playerShips = {};
+    activeShipId = BS_SHIPS[0].id;
+    orientation = 'h';
+    hoverCell = null;
+    battleSection.style.display = 'none';
+    placementSection.style.display = 'flex';
+    status.textContent = 'Place your fleet to begin!';
+    renderPlacementBoard();
+    renderShipChips();
+    updateStartBtn();
+  }
+
+  function shipCellsFrom(meta, r, c, orient) {
+    const cells = [];
+    for (let i = 0; i < meta.size; i++) {
+      cells.push(orient === 'h' ? { r, c: c + i } : { r: r + i, c });
+    }
+    return cells;
+  }
+
+  function canPlace(cells, excludeShipId) {
+    return cells.every(p => {
+      if (!inBounds(p.r, p.c)) return false;
+      const occ = playerBoard[p.r][p.c].shipId;
+      return occ === null || occ === excludeShipId;
+    });
+  }
+
+  function handlePlacementClick(r, c) {
+    // Clicking an already-placed ship selects it for moving/rotating instead of placing the active ship on top of it.
+    const existingId = playerBoard[r][c].shipId;
+    if (existingId && existingId !== activeShipId) {
+      activeShipId = existingId;
+      renderShipChips();
+      renderPlacementBoard();
+      return;
+    }
+    if (!activeShipId) return;
+    const meta = BS_SHIPS.find(s => s.id === activeShipId);
+    const cells = shipCellsFrom(meta, r, c, orientation);
+    if (!canPlace(cells, activeShipId)) return;
+
+    // Clear the ship's previous cells (if it was already placed) before committing the new position.
+    if (playerShips[activeShipId]) {
+      playerShips[activeShipId].cells.forEach(p => { playerBoard[p.r][p.c].shipId = null; });
+    }
+    cells.forEach(p => { playerBoard[p.r][p.c].shipId = activeShipId; });
+    playerShips[activeShipId] = { name: meta.name, size: meta.size, cells, hits: 0 };
+
+    activeShipId = firstUnplacedShipId();
+    renderShipChips();
+    renderPlacementBoard();
+    updateStartBtn();
+  }
+
+  function placeRemainingRandomly() {
+    BS_SHIPS.forEach(meta => {
+      if (playerShips[meta.id]) return;
+      let placed = false;
+      while (!placed) {
+        const horizontal = Math.random() < 0.5;
+        const r = Math.floor(Math.random() * (horizontal ? BS_SIZE : BS_SIZE - meta.size + 1));
+        const c = Math.floor(Math.random() * (horizontal ? BS_SIZE - meta.size + 1 : BS_SIZE));
+        const cells = shipCellsFrom(meta, r, c, horizontal ? 'h' : 'v');
+        if (canPlace(cells, meta.id)) {
+          cells.forEach(p => { playerBoard[p.r][p.c].shipId = meta.id; });
+          playerShips[meta.id] = { name: meta.name, size: meta.size, cells, hits: 0 };
+          placed = true;
+        }
+      }
+    });
+    activeShipId = firstUnplacedShipId();
+  }
+
+  function renderShipChips() {
+    BS_SHIPS.forEach(meta => {
+      const chip = shipChipEls[meta.id];
+      chip.textContent = shipLabel(meta, !!playerShips[meta.id]);
+      chip.classList.toggle('active', meta.id === activeShipId);
+    });
+  }
+
+  function updateStartBtn() {
+    const allPlaced = Object.keys(playerShips).length >= BS_SHIPS.length;
+    startBtn.disabled = !allPlaced;
+    placementHint.textContent = allPlaced
+      ? 'All ships placed! Click Start Battle, or click a ship to reposition it.'
+      : 'Pick a ship below, then click the grid to place it. Click a placed ship to move or rotate it.';
+  }
+
+  function renderPlacementBoard() {
+    let previewCells = [];
+    let previewValid = false;
+    if (activeShipId && hoverCell) {
+      const meta = BS_SHIPS.find(s => s.id === activeShipId);
+      previewCells = shipCellsFrom(meta, hoverCell.r, hoverCell.c, orientation);
+      previewValid = canPlace(previewCells, activeShipId);
+    }
+    for (let r = 0; r < BS_SIZE; r++) {
+      for (let c = 0; c < BS_SIZE; c++) {
+        const el = placementCellEls[r][c];
+        el.className = 'bs-cell placeable';
+        if (playerBoard[r][c].shipId) el.classList.add('ship');
+        const inPreview = previewCells.some(p => p.r === r && p.c === c);
+        if (inPreview) el.classList.add(previewValid ? 'preview-valid' : 'preview-invalid');
+      }
+    }
+  }
+
+  /* ---------------- Battle phase logic ---------------- */
+  function startBattle() {
+    if (Object.keys(playerShips).length < BS_SHIPS.length) return;
+    computerBoard = createEmptyBoard();
+    computerShips = placeFleet(computerBoard);
+    gameOver = false;
+    isPlayerTurn = true;
+    sunkCount = 0;
+    phase = 'battle';
+    placementSection.style.display = 'none';
+    battleSection.style.display = 'flex';
+    status.textContent = 'Fire at the enemy waters to begin!';
+    renderBattleBoards();
+    updateEnemyClickability();
+  }
+
+  function handleEnemyClick(r, c) {
+    if (!isPlayerTurn || gameOver) return;
+    if (computerBoard[r][c].hit) return;
+    const result = fireAt(computerBoard, computerShips, r, c);
+    renderBattleBoards();
+    showPlayerShotMessage(result);
+    if (allSunk(computerShips)) {
+      endGame(true);
+      return;
+    }
+    isPlayerTurn = false;
+    updateEnemyClickability();
+    setTimeout(computerTurn, 600);
+  }
+
+  function showPlayerShotMessage(result) {
+    if (result.result === 'miss') {
+      status.textContent = 'Miss!';
+      return;
+    }
+    if (difficulty === 'easy') {
+      if (result.sunk) {
+        sunkCount++;
+        status.textContent = `Hit and sunk the ${result.shipName}! (${sunkCount}/${BS_SHIPS.length} sunk)`;
+      } else {
+        status.textContent = 'Hit!';
+      }
+    } else if (difficulty === 'medium') {
+      if (result.sunk) {
+        sunkCount++;
+        status.textContent = `Hit and sunk a ship! (${sunkCount}/${BS_SHIPS.length} sunk)`;
+      } else {
+        status.textContent = 'Hit!';
+      }
+    } else {
+      status.textContent = 'Hit!';
+    }
+  }
+
+  function computerTurn() {
+    if (gameOver) return;
+    const { r, c } = getAIShot();
+    const result = fireAt(playerBoard, playerShips, r, c);
+    renderBattleBoards();
+    if (result.result === 'hit') {
+      status.textContent = result.sunk
+        ? `Computer hit and sank your ${result.shipName}!`
+        : 'Computer hit your ship!';
+    } else {
+      status.textContent = 'Computer missed!';
+    }
+    if (allSunk(playerShips)) {
+      endGame(false);
+      return;
+    }
+    isPlayerTurn = true;
+    updateEnemyClickability();
+  }
+
+  // ---- Computer AI ----
+  function isAdjacentToMiss(board, r, c) {
+    const neighbors = [{ r: r - 1, c }, { r: r + 1, c }, { r, c: c - 1 }, { r, c: c + 1 }];
+    return neighbors.some(p => inBounds(p.r, p.c) && board[p.r][p.c].hit && board[p.r][p.c].shipId === null);
+  }
+
+  function getExtensionCandidates(hitCells, board) {
+    let cands;
+    if (hitCells.length === 1) {
+      const { r, c } = hitCells[0];
+      cands = [{ r: r - 1, c }, { r: r + 1, c }, { r, c: c - 1 }, { r, c: c + 1 }];
+    } else {
+      const rows = hitCells.map(h => h.r);
+      const cols = hitCells.map(h => h.c);
+      if (rows.every(r => r === rows[0])) {
+        const r = rows[0];
+        cands = [{ r, c: Math.min(...cols) - 1 }, { r, c: Math.max(...cols) + 1 }];
+      } else {
+        const c = cols[0];
+        cands = [{ r: Math.min(...rows) - 1, c }, { r: Math.max(...rows) + 1, c }];
+      }
+    }
+    return cands.filter(p => inBounds(p.r, p.c) && !board[p.r][p.c].hit);
+  }
+
+  function getAIShot() {
+    const board = playerBoard, ships = playerShips;
+
+    if (difficulty !== 'easy') {
+      let candidates = [];
+      Object.keys(ships).forEach(id => {
+        const ship = ships[id];
+        if (ship.hits > 0 && ship.hits < ship.size) {
+          const hitCells = ship.cells.filter(p => board[p.r][p.c].hit);
+          candidates = candidates.concat(getExtensionCandidates(hitCells, board));
+        }
+      });
+      const seen = new Set();
+      candidates = candidates.filter(p => {
+        const k = p.r + ',' + p.c;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      if (candidates.length) {
+        return candidates[Math.floor(Math.random() * candidates.length)];
+      }
+    }
+
+    const untried = [];
+    for (let r = 0; r < BS_SIZE; r++) {
+      for (let c = 0; c < BS_SIZE; c++) {
+        if (!board[r][c].hit) untried.push({ r, c });
+      }
+    }
+    if (difficulty === 'hard') {
+      const safe = untried.filter(p => !isAdjacentToMiss(board, p.r, p.c));
+      const pool = safe.length ? safe : untried;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    return untried[Math.floor(Math.random() * untried.length)];
+  }
+
+  function updateEnemyClickability() {
+    enemyGrid.classList.toggle('disabled', !isPlayerTurn || gameOver);
+  }
+
+  function endGame(playerWon) {
+    gameOver = true;
+    isPlayerTurn = false;
+    updateEnemyClickability();
+    renderBattleBoards();
+    status.textContent = playerWon
+      ? 'You sank the entire enemy fleet! 🎉 You win!'
+      : 'The computer sank your entire fleet!';
+  }
+
+  function renderBattleBoards() {
+    for (let r = 0; r < BS_SIZE; r++) {
+      for (let c = 0; c < BS_SIZE; c++) {
+        const ownEl = ownCellEls[r][c];
+        const ownCell = playerBoard[r][c];
+        ownEl.className = 'bs-cell';
+        ownEl.textContent = '';
+        if (ownCell.shipId) ownEl.classList.add('ship');
+        if (ownCell.hit) {
+          ownEl.classList.add(ownCell.shipId ? 'hit' : 'miss');
+          if (ownCell.shipId) {
+            ownEl.textContent = '💥';
+            if (playerShips[ownCell.shipId].hits >= playerShips[ownCell.shipId].size) {
+              ownEl.classList.add('sunk');
+            }
+          }
+        }
+
+        const enemyEl = enemyCellEls[r][c];
+        const enemyCell = computerBoard[r][c];
+        enemyEl.className = 'bs-cell enemy';
+        enemyEl.textContent = '';
+        if (enemyCell.hit) {
+          enemyEl.classList.add(enemyCell.shipId ? 'hit' : 'miss');
+          if (enemyCell.shipId) {
+            enemyEl.textContent = '💥';
+            const sunk = computerShips[enemyCell.shipId].hits >= computerShips[enemyCell.shipId].size;
+            if (sunk && difficulty !== 'hard') enemyEl.classList.add('sunk');
+          }
+        } else if (gameOver && enemyCell.shipId) {
+          enemyEl.classList.add('ship');
+        }
+      }
+    }
+  }
+
+  resetToPlacement();
+}
+
+renderHub();
+</script>
+</body>
+</html>
