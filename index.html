@@ -470,6 +470,87 @@
     color: var(--cream-dim);
     text-align: center;
   }
+
+  /* ---- Firetruck Maze ---- */
+  .maze-canvas {
+    border-radius: 12px;
+  }
+  .maze-stats {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--cream-dim);
+  }
+
+  /* ---- Animal Yum ---- */
+  .yz-dice-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .yz-die {
+    width: 54px;
+    height: 54px;
+    border-radius: 12px;
+    background: var(--bg-mid);
+    border: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    cursor: pointer;
+    transition: transform 80ms ease-out;
+  }
+  .yz-die.held { border-color: var(--mint); background: var(--panel); transform: translateY(-4px); }
+  .yz-die.empty { opacity: 0.35; }
+  .yz-die:disabled { cursor: default; }
+
+  .yz-table {
+    width: 100%;
+    max-width: 560px;
+    border-collapse: collapse;
+    font-family: 'Nunito', sans-serif;
+  }
+  .yz-table th, .yz-table td {
+    padding: 7px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--panel-edge);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--cream);
+  }
+  .yz-table th {
+    color: var(--cream-dim);
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .yz-animal-cell {
+    text-align: left !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .yz-score-btn {
+    background: var(--sun);
+    color: var(--bg-deep);
+    border: none;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+  }
+  .yz-score-btn:active { transform: translateY(1px); }
+  .yz-filled { color: var(--mint); }
+  .yz-dash { color: var(--cream-dim); opacity: 0.5; }
+  .yz-total-row td {
+    border-top: 2px solid var(--panel-edge);
+    border-bottom: none;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 16px;
+    padding-top: 10px;
+  }
 </style>
 </head>
 <body>
@@ -492,13 +573,13 @@
    add one entry here. That's the whole integration point.
    ========================================================= */
 const GAMES = [
-  { id: 'maze',        name: 'Firetruck Maze',   icon: '🚒', color: 'coral',     ready: false },
+  { id: 'maze',        name: 'Firetruck Maze',   icon: '🚒', color: 'coral',     ready: true, init: initFiretruckMaze },
   { id: 'tictactoe',   name: 'Tic-Tac-Toe',      icon: '❌', color: 'sky',       ready: true, init: initTicTacToe },
   { id: 'connect4',    name: 'Connect 4',        icon: '🔴', color: 'sun',       ready: true, init: initConnect4 },
   { id: 'battleship',  name: 'Battleship',       icon: '🚢', color: 'grape',     ready: true, init: initBattleship },
   { id: 'snake',       name: 'Snake',            icon: '🐍', color: 'mint',      ready: true, init: initSnake },
   { id: 'pacman',      name: 'Banana Chase',     icon: '🐒', color: 'tangerine', ready: true, init: initBananaChase },
-  { id: 'dice',        name: 'Dice Games',       icon: '🎲', color: 'coral',     ready: false },
+  { id: 'dice',        name: 'Animal Yum',       icon: '🐾', color: 'coral',     ready: true, init: initAnimalYum },
   { id: 'fishsticks',  name: 'Fish Sticks',      icon: '🐟', color: 'sky',       ready: true, init: initFishSticks },
   { id: 'pattern',     name: 'Pattern Game',     icon: '✨', color: 'sun',       ready: false },
   { id: 'cardmatch',   name: 'Card Match',       icon: '🃏', color: 'grape',     ready: false },
@@ -2345,6 +2426,716 @@ function initBattleship(container) {
   }
 
   resetToPlacement();
+}
+
+/* =========================================================
+   FIRETRUCK MAZE
+   A randomly generated city-street maze. Generation happens
+   in three passes:
+   1. Recursive backtracking carves a perfect maze (a spanning
+      tree) over the grid - this is what naturally produces
+      genuine dead-end streets, since a spanning tree has
+      exactly one route between any two cells.
+   2. A handful of extra connections are added between random
+      adjacent cells that the spanning tree didn't already
+      connect, creating loops/alternate routes through the
+      city (a pure spanning tree would make every street a
+      single required path with no way to detour).
+   3. Some of the resulting open streets are marked as
+      "blocked by traffic". Each candidate is checked with a
+      BFS from the station to the fire before being kept, so a
+      route from station to fire always exists no matter which
+      streets end up blocked.
+   ========================================================= */
+function initFiretruckMaze(container) {
+  const DIFFICULTY_SETTINGS = {
+    easy:   { W: 8,  H: 6, BLOCK: 34, STREET: 14, fog: false },
+    medium: { W: 11, H: 8, BLOCK: 27, STREET: 12, fog: false },
+    hard:   { W: 13, H: 9, BLOCK: 23, STREET: 10, fog: true },
+  };
+  const BUILDING_COLORS = ['#2a2560', '#332c72', '#241f57', '#3a3374'];
+
+  let difficulty = 'easy';
+  let W, H, BLOCK, STREET, FOG, DW, DH, colSizes, rowSizes, colX, rowY, SIZE_W, SIZE_H;
+  let openEdges, blockedEdges, discoveredBlocked, display, buildingColorMap;
+  let START, GOAL;
+  let truck, moves, gameOver, doused, elapsed, clockTimer;
+  let particles = [], animFrame = null;
+
+  const wrap = document.createElement('div');
+
+  const diffRow = document.createElement('div');
+  diffRow.className = 'chip-toggle';
+  const easyBtn = makeChip('Easy', () => setDifficulty('easy'));
+  const mediumBtn = makeChip('Medium', () => setDifficulty('medium'));
+  const hardBtn = makeChip('Hard', () => setDifficulty('hard'));
+  const diffBtns = { easy: easyBtn, medium: mediumBtn, hard: hardBtn };
+  diffRow.appendChild(easyBtn);
+  diffRow.appendChild(mediumBtn);
+  diffRow.appendChild(hardBtn);
+  wrap.appendChild(diffRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+
+  const stats = document.createElement('div');
+  stats.className = 'maze-stats';
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'maze-canvas';
+  const ctx = canvas.getContext('2d');
+
+  const dpad = document.createElement('div');
+  dpad.className = 'dpad';
+  const upBtn = makeDpadBtn('dpad-up', '↑', 0, -1);
+  const leftBtn = makeDpadBtn('dpad-left', '←', -1, 0);
+  const rightBtn = makeDpadBtn('dpad-right', '→', 1, 0);
+  const downBtn = makeDpadBtn('dpad-down', '↓', 0, 1);
+  dpad.appendChild(upBtn);
+  dpad.appendChild(leftBtn);
+  dpad.appendChild(rightBtn);
+  dpad.appendChild(downBtn);
+
+  const newMazeBtn = document.createElement('button');
+  newMazeBtn.className = 'primary-btn';
+  newMazeBtn.textContent = 'New maze';
+  newMazeBtn.addEventListener('click', resetGame);
+
+  panel.appendChild(status);
+  panel.appendChild(stats);
+  panel.appendChild(canvas);
+  panel.appendChild(dpad);
+  panel.appendChild(newMazeBtn);
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function makeDpadBtn(cls, label, dx, dy) {
+    const b = document.createElement('button');
+    b.className = 'dpad-btn ' + cls;
+    b.textContent = label;
+    b.addEventListener('click', () => tryMove(dx, dy));
+    return b;
+  }
+
+  function keyHandler(e) {
+    const map = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+    if (map[e.key]) {
+      e.preventDefault();
+      tryMove(map[e.key][0], map[e.key][1]);
+    }
+  }
+  window.addEventListener('keydown', keyHandler);
+
+  function setDifficulty(d) {
+    difficulty = d;
+    Object.entries(diffBtns).forEach(([key, btn]) => btn.classList.toggle('active', key === d));
+    computeGeometry();
+    resetGame();
+  }
+
+  // Recomputes grid dimensions and pixel layout for the current difficulty.
+  // Odd indices are intersections (BLOCK-sized), even indices are street
+  // segments / corners (STREET-sized) - this asymmetry is what makes each
+  // move read as one clear hop between intersections rather than a jump.
+  function computeGeometry() {
+    const s = DIFFICULTY_SETTINGS[difficulty];
+    W = s.W; H = s.H; BLOCK = s.BLOCK; STREET = s.STREET; FOG = s.fog;
+    DW = 2 * W + 1; DH = 2 * H + 1;
+    START = { r: 0, c: 0 };
+    GOAL = { r: H - 1, c: W - 1 };
+    colSizes = Array.from({ length: DW }, (_, i) => (i % 2 === 1 ? BLOCK : STREET));
+    rowSizes = Array.from({ length: DH }, (_, i) => (i % 2 === 1 ? BLOCK : STREET));
+    colX = [0];
+    for (let i = 0; i < DW; i++) colX.push(colX[i] + colSizes[i]);
+    rowY = [0];
+    for (let i = 0; i < DH; i++) rowY.push(rowY[i] + rowSizes[i]);
+    SIZE_W = colX[DW]; SIZE_H = rowY[DH];
+    canvas.width = SIZE_W;
+    canvas.height = SIZE_H;
+  }
+
+  function edgeKey(r1, c1, r2, c2) {
+    if (r1 > r2 || (r1 === r2 && c1 > c2)) { [r1, c1, r2, c2] = [r2, c2, r1, c1]; }
+    return `${r1},${c1}-${r2},${c2}`;
+  }
+
+  function shuffledDirs() {
+    const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    for (let i = dirs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+    }
+    return dirs;
+  }
+
+  function generateSpanningTree() {
+    const edges = new Set();
+    const visited = Array.from({ length: H }, () => Array(W).fill(false));
+    const stack = [[0, 0]];
+    visited[0][0] = true;
+    while (stack.length) {
+      const [r, c] = stack[stack.length - 1];
+      let advanced = false;
+      for (const [dc, dr] of shuffledDirs()) {
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= H || nc < 0 || nc >= W || visited[nr][nc]) continue;
+        edges.add(edgeKey(r, c, nr, nc));
+        visited[nr][nc] = true;
+        stack.push([nr, nc]);
+        advanced = true;
+        break;
+      }
+      if (!advanced) stack.pop();
+    }
+    return edges;
+  }
+
+  function addLoopEdges(edges, chance) {
+    for (let r = 0; r < H; r++) {
+      for (let c = 0; c < W; c++) {
+        if (c + 1 < W) {
+          const k = edgeKey(r, c, r, c + 1);
+          if (!edges.has(k) && Math.random() < chance) edges.add(k);
+        }
+        if (r + 1 < H) {
+          const k = edgeKey(r, c, r + 1, c);
+          if (!edges.has(k) && Math.random() < chance) edges.add(k);
+        }
+      }
+    }
+  }
+
+  function isConnected(edges, blocked, start, goal) {
+    const visited = new Set([start.r + ',' + start.c]);
+    const queue = [start];
+    let head = 0;
+    while (head < queue.length) {
+      const cur = queue[head++];
+      if (cur.r === goal.r && cur.c === goal.c) return true;
+      const neighbors = [[cur.r - 1, cur.c], [cur.r + 1, cur.c], [cur.r, cur.c - 1], [cur.r, cur.c + 1]];
+      for (const [nr, nc] of neighbors) {
+        if (nr < 0 || nr >= H || nc < 0 || nc >= W) continue;
+        const k = edgeKey(cur.r, cur.c, nr, nc);
+        if (!edges.has(k) || blocked.has(k)) continue;
+        const k2 = nr + ',' + nc;
+        if (visited.has(k2)) continue;
+        visited.add(k2);
+        queue.push({ r: nr, c: nc });
+      }
+    }
+    return false;
+  }
+
+  function chooseBlockedEdges(edges, count) {
+    const blocked = new Set();
+    const candidates = [...edges];
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    for (const key of candidates) {
+      if (blocked.size >= count) break;
+      blocked.add(key);
+      if (!isConnected(edges, blocked, START, GOAL)) {
+        blocked.delete(key);
+      }
+    }
+    return blocked;
+  }
+
+  function buildDisplay() {
+    const disp = Array.from({ length: DH }, () => Array(DW).fill(0));
+    for (let r = 0; r < H; r++) {
+      for (let c = 0; c < W; c++) {
+        disp[2 * r + 1][2 * c + 1] = 1;
+        if (c + 1 < W) {
+          const k = edgeKey(r, c, r, c + 1);
+          if (openEdges.has(k)) disp[2 * r + 1][2 * c + 2] = blockedEdges.has(k) ? 2 : 1;
+        }
+        if (r + 1 < H) {
+          const k = edgeKey(r, c, r + 1, c);
+          if (openEdges.has(k)) disp[2 * r + 2][2 * c + 1] = blockedEdges.has(k) ? 2 : 1;
+        }
+      }
+    }
+    return disp;
+  }
+
+  // Maps a display-grid position back to the underlying edge key, used only
+  // to look up fog-of-war state for connector squares while drawing.
+  function connectorEdgeKey(r, c) {
+    if (r % 2 === 1 && c % 2 === 0 && c > 0 && c < DW - 1) {
+      const mr = (r - 1) / 2;
+      return edgeKey(mr, c / 2 - 1, mr, c / 2);
+    }
+    if (r % 2 === 0 && c % 2 === 1 && r > 0 && r < DH - 1) {
+      const mc = (c - 1) / 2;
+      return edgeKey(r / 2 - 1, mc, r / 2, mc);
+    }
+    return null;
+  }
+
+  function canMove(r, c, nr, nc) {
+    if (nr < 0 || nr >= H || nc < 0 || nc >= W) return false;
+    const k = edgeKey(r, c, nr, nc);
+    return openEdges.has(k) && !blockedEdges.has(k);
+  }
+
+  // Reveals any blocked streets directly connected to the given cell - on
+  // Hard mode, this is the only way blocked streets become visible, so the
+  // player only learns about them once the truck reaches an intersection
+  // next to one.
+  function revealAdjacent(r, c) {
+    const neighbors = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
+    neighbors.forEach(([nr, nc]) => {
+      if (nr < 0 || nr >= H || nc < 0 || nc >= W) return;
+      const k = edgeKey(r, c, nr, nc);
+      if (blockedEdges.has(k)) discoveredBlocked.add(k);
+    });
+  }
+
+  function tryMove(dx, dy) {
+    if (gameOver) return;
+    const nr = truck.r + dy, nc = truck.c + dx;
+    if (!canMove(truck.r, truck.c, nr, nc)) return;
+    truck = { r: nr, c: nc };
+    moves++;
+    revealAdjacent(truck.r, truck.c);
+    updateStats();
+    draw();
+    if (truck.r === GOAL.r && truck.c === GOAL.c) {
+      endGame();
+    }
+  }
+
+  function updateStats() {
+    stats.textContent = `Moves: ${moves} | Time: ${elapsed}s`;
+  }
+
+  function resetGame() {
+    if (animFrame) cancelAnimationFrame(animFrame);
+    particles = [];
+    openEdges = generateSpanningTree();
+    addLoopEdges(openEdges, 0.15);
+    const blockCount = Math.max(4, Math.floor((W * H) / 8));
+    blockedEdges = chooseBlockedEdges(openEdges, blockCount);
+    discoveredBlocked = new Set();
+    display = buildDisplay();
+    buildingColorMap = new Map();
+
+    truck = { r: START.r, c: START.c };
+    revealAdjacent(truck.r, truck.c);
+    moves = 0;
+    elapsed = 0;
+    gameOver = false;
+    doused = false;
+    status.textContent = FOG
+      ? 'Get the firetruck to the fire! Watch out — blocked streets are hidden until you get close.'
+      : 'Get the firetruck to the fire! Some streets are blocked by traffic — find another way around.';
+    updateStats();
+    if (clockTimer) clearInterval(clockTimer);
+    clockTimer = setInterval(() => {
+      if (!gameOver) { elapsed++; updateStats(); }
+    }, 1000);
+    draw();
+  }
+
+  function cellCenter(r, c) {
+    return {
+      x: colX[2 * c + 1] + BLOCK / 2,
+      y: rowY[2 * r + 1] + BLOCK / 2,
+    };
+  }
+
+  function endGame() {
+    gameOver = true;
+    doused = true;
+    clearInterval(clockTimer);
+    status.textContent = `You doused the fire! 🚒💦 ${moves} moves, ${elapsed}s.`;
+    const { x, y } = cellCenter(GOAL.r, GOAL.c);
+    spawnSplash(x, y);
+  }
+
+  function spawnSplash(x, y) {
+    particles = [];
+    const COUNT = 18;
+    for (let i = 0; i < COUNT; i++) {
+      const angle = (Math.PI * 2 * i) / COUNT + (Math.random() - 0.5) * 0.4;
+      const speed = 1.4 + Math.random() * 2.2;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.2,
+        life: 0,
+        maxLife: 35 + Math.random() * 20,
+      });
+    }
+    animateParticles();
+  }
+
+  function animateParticles() {
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.12;
+      p.life++;
+    });
+    particles = particles.filter(p => p.life < p.maxLife);
+    draw();
+    if (particles.length > 0) {
+      animFrame = requestAnimationFrame(animateParticles);
+    } else {
+      animFrame = null;
+    }
+  }
+
+  function buildingColorFor(r, c) {
+    const key = r + ',' + c;
+    if (!buildingColorMap.has(key)) {
+      buildingColorMap.set(key, BUILDING_COLORS[Math.floor(Math.random() * BUILDING_COLORS.length)]);
+    }
+    return buildingColorMap.get(key);
+  }
+
+  function draw() {
+    ctx.fillStyle = '#171533';
+    ctx.fillRect(0, 0, SIZE_W, SIZE_H);
+
+    for (let r = 0; r < DH; r++) {
+      for (let c = 0; c < DW; c++) {
+        let val = display[r][c];
+        const x = colX[c], y = rowY[r], w = colSizes[c], h = rowSizes[r];
+
+        if (val === 2 && FOG) {
+          const key = connectorEdgeKey(r, c);
+          if (key && !discoveredBlocked.has(key)) val = 1; // not yet discovered - looks like a normal street
+        }
+
+        if (val === 0) {
+          ctx.fillStyle = buildingColorFor(r, c);
+          ctx.fillRect(x + 1, y + 1, Math.max(0, w - 2), Math.max(0, h - 2));
+        } else {
+          ctx.fillStyle = '#201c47';
+          ctx.fillRect(x, y, w, h);
+          if (val === 2) {
+            ctx.fillStyle = 'rgba(255, 107, 106, 0.35)';
+            ctx.fillRect(x, y, w, h);
+            ctx.font = `${Math.floor(Math.min(w, h) * 0.85)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🚧', x + w / 2, y + h / 2);
+          }
+        }
+      }
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const goalPos = cellCenter(GOAL.r, GOAL.c);
+    ctx.font = `${Math.floor(BLOCK * 0.9)}px sans-serif`;
+    ctx.fillText(doused ? '💨' : '🔥', goalPos.x, goalPos.y);
+
+    const truckPos = cellCenter(truck.r, truck.c);
+    ctx.fillText('🚒', truckPos.x, truckPos.y);
+
+    if (particles.length) {
+      ctx.font = `${Math.floor(BLOCK * 0.4)}px sans-serif`;
+      particles.forEach(p => {
+        ctx.globalAlpha = Math.max(0, 1 - p.life / p.maxLife);
+        ctx.fillText('💧', p.x, p.y);
+      });
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  setDifficulty('easy');
+
+  return function cleanup() {
+    clearInterval(clockTimer);
+    if (animFrame) cancelAnimationFrame(animFrame);
+    window.removeEventListener('keydown', keyHandler);
+  };
+}
+
+/* =========================================================
+   ANIMAL YUM
+   A 2-player dice game in the style of Yahtzee's upper
+   section: instead of numbered dice, each of the 5 dice shows
+   one of 6 animal faces. Each turn, a player gets up to 3
+   rolls, choosing which dice to hold between rolls, then must
+   score into one of their own 6 (still-empty) categories - the
+   score is simply how many of the 5 dice show that animal.
+   The game ends once both players have filled all 6 categories
+   on their own scorecard; higher total wins.
+   ========================================================= */
+const YZ_ANIMALS = [
+  { id: 'monkey', icon: '🐵', name: 'Monkeys' },
+  { id: 'dog', icon: '🐶', name: 'Dogs' },
+  { id: 'cat', icon: '🐱', name: 'Cats' },
+  { id: 'lion', icon: '🦁', name: 'Lions' },
+  { id: 'frog', icon: '🐸', name: 'Frogs' },
+  { id: 'panda', icon: '🐼', name: 'Pandas' },
+];
+
+function initAnimalYum(container) {
+  let numPlayers = 2;
+  let players, current, dice, rollsUsed, gameOver;
+  let cellEls = [];
+  const dieEls = [];
+  let totalEls = [];
+
+  const wrap = document.createElement('div');
+
+  const countRow = document.createElement('div');
+  countRow.className = 'chip-toggle';
+  const countBtns = {};
+  [1, 2, 3, 4].forEach(n => {
+    const label = n === 1 ? '1 Player' : `${n} Players`;
+    const btn = makeChip(label, () => setPlayerCount(n));
+    countBtns[n] = btn;
+    countRow.appendChild(btn);
+  });
+  wrap.appendChild(countRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+  panel.appendChild(status);
+
+  const diceRow = document.createElement('div');
+  diceRow.className = 'yz-dice-row';
+  for (let i = 0; i < 5; i++) {
+    const die = document.createElement('button');
+    die.className = 'yz-die empty';
+    die.textContent = '❔';
+    die.addEventListener('click', () => toggleHold(i));
+    diceRow.appendChild(die);
+    dieEls.push(die);
+  }
+  panel.appendChild(diceRow);
+
+  const rollBtn = document.createElement('button');
+  rollBtn.className = 'primary-btn';
+  rollBtn.textContent = 'Roll Dice';
+  rollBtn.addEventListener('click', rollDice);
+  panel.appendChild(rollBtn);
+
+  const table = document.createElement('table');
+  table.className = 'yz-table';
+  panel.appendChild(table);
+
+  const newGameBtn = document.createElement('button');
+  newGameBtn.className = 'primary-btn';
+  newGameBtn.textContent = 'New game';
+  newGameBtn.addEventListener('click', resetGame);
+  panel.appendChild(newGameBtn);
+
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function setPlayerCount(n) {
+    numPlayers = n;
+    Object.entries(countBtns).forEach(([key, btn]) => btn.classList.toggle('active', Number(key) === n));
+    resetGame();
+  }
+
+  function emptyScores() {
+    return Object.fromEntries(YZ_ANIMALS.map(a => [a.id, null]));
+  }
+
+  // Rebuilds the scorecard table's columns to match the current player
+  // count - called once per new game, since the number of columns only
+  // changes when a new game starts, not mid-game.
+  function buildTable() {
+    table.innerHTML = '';
+    cellEls = Array.from({ length: numPlayers }, () => ({}));
+
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    headRow.innerHTML = '<th>Picture</th>' + players.map(p => `<th>${p.name}</th>`).join('');
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    YZ_ANIMALS.forEach(a => {
+      const row = document.createElement('tr');
+      const nameCell = document.createElement('td');
+      nameCell.className = 'yz-animal-cell';
+      nameCell.innerHTML = `<span>${a.icon}</span><span>${a.name}</span>`;
+      row.appendChild(nameCell);
+      for (let p = 0; p < numPlayers; p++) {
+        const cell = document.createElement('td');
+        row.appendChild(cell);
+        cellEls[p][a.id] = cell;
+      }
+      tbody.appendChild(row);
+    });
+
+    const totalRow = document.createElement('tr');
+    totalRow.className = 'yz-total-row';
+    totalRow.innerHTML = '<td>Total</td>';
+    totalEls = [];
+    for (let p = 0; p < numPlayers; p++) {
+      const td = document.createElement('td');
+      totalRow.appendChild(td);
+      totalEls.push(td);
+    }
+    tbody.appendChild(totalRow);
+    table.appendChild(tbody);
+  }
+
+  function resetGame() {
+    players = Array.from({ length: numPlayers }, (_, i) => ({ name: `Player ${i + 1}`, scores: emptyScores() }));
+    current = 0;
+    gameOver = false;
+    buildTable();
+    startTurn();
+  }
+  setPlayerCount(2);
+
+  function startTurn() {
+    dice = Array.from({ length: 5 }, () => ({ face: null, held: false }));
+    rollsUsed = 0;
+    renderDice();
+    renderScorecard();
+    updateRollBtn();
+    updateStatus();
+  }
+
+  function rollDice() {
+    if (gameOver || rollsUsed >= 3) return;
+    dice.forEach(d => {
+      if (!d.held) d.face = YZ_ANIMALS[Math.floor(Math.random() * YZ_ANIMALS.length)].id;
+    });
+    rollsUsed++;
+    renderDice();
+    renderScorecard();
+    updateRollBtn();
+    updateStatus();
+  }
+
+  function toggleHold(i) {
+    if (gameOver || rollsUsed === 0 || rollsUsed >= 3) return;
+    dice[i].held = !dice[i].held;
+    renderDice();
+  }
+
+  function updateRollBtn() {
+    rollBtn.textContent = rollsUsed === 0 ? 'Roll Dice' : `Reroll unheld dice (${3 - rollsUsed} left)`;
+    rollBtn.disabled = gameOver || rollsUsed >= 3;
+  }
+
+  function updateStatus() {
+    if (gameOver) return;
+    const p = players[current];
+    status.textContent = rollsUsed === 0
+      ? `${p.name}'s turn — roll the dice!`
+      : `${p.name}'s turn — hold dice you want to keep, then reroll or pick a picture to score.`;
+  }
+
+  function iconFor(faceId) {
+    return YZ_ANIMALS.find(a => a.id === faceId).icon;
+  }
+
+  function renderDice() {
+    dieEls.forEach((el, i) => {
+      const d = dice[i];
+      el.className = 'yz-die' + (d.face === null ? ' empty' : '') + (d.held ? ' held' : '');
+      el.textContent = d.face === null ? '❔' : iconFor(d.face);
+      el.disabled = gameOver || rollsUsed === 0 || rollsUsed >= 3;
+    });
+  }
+
+  function currentCounts() {
+    const counts = {};
+    YZ_ANIMALS.forEach(a => { counts[a.id] = 0; });
+    dice.forEach(d => { if (d.face) counts[d.face]++; });
+    return counts;
+  }
+
+  function scoreCategory(animalId) {
+    if (gameOver || rollsUsed === 0) return;
+    const p = players[current];
+    if (p.scores[animalId] !== null) return;
+    p.scores[animalId] = currentCounts()[animalId];
+    advanceTurn();
+  }
+
+  function totalFor(player) {
+    return YZ_ANIMALS.reduce((sum, a) => sum + (player.scores[a.id] || 0), 0);
+  }
+
+  function advanceTurn() {
+    const allDone = players.every(pl => YZ_ANIMALS.every(a => pl.scores[a.id] !== null));
+    if (allDone) {
+      endGame();
+      return;
+    }
+    current = (current + 1) % numPlayers;
+    startTurn();
+  }
+
+  function endGame() {
+    gameOver = true;
+    const totals = players.map(totalFor);
+    const best = Math.max(...totals);
+    const winners = players.filter((p, i) => totals[i] === best);
+    status.textContent = winners.length > 1
+      ? `It's a tie between ${winners.map(w => w.name).join(' and ')} with ${best} points!`
+      : `${winners[0].name} wins with ${best} points! 🎉`;
+    renderDice();
+    renderScorecard();
+    updateRollBtn();
+  }
+
+  function renderScorecard() {
+    const counts = rollsUsed > 0 ? currentCounts() : null;
+    YZ_ANIMALS.forEach(a => {
+      for (let p = 0; p < numPlayers; p++) {
+        const cell = cellEls[p][a.id];
+        cell.innerHTML = '';
+        cell.className = '';
+        const val = players[p].scores[a.id];
+        if (val !== null) {
+          cell.textContent = val;
+          cell.className = 'yz-filled';
+        } else if (p === current && counts && !gameOver) {
+          const btn = document.createElement('button');
+          btn.className = 'yz-score-btn';
+          btn.textContent = counts[a.id];
+          btn.addEventListener('click', () => scoreCategory(a.id));
+          cell.appendChild(btn);
+        } else {
+          cell.textContent = '–';
+          cell.className = 'yz-dash';
+        }
+      }
+    });
+    for (let p = 0; p < numPlayers; p++) {
+      totalEls[p].textContent = totalFor(players[p]);
+    }
+  }
 }
 
 renderHub();
