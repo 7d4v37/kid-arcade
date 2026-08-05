@@ -551,6 +551,212 @@
     font-size: 16px;
     padding-top: 10px;
   }
+
+  /* ---- Pattern Game ---- */
+  .pg-sequence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .pg-card {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: var(--bg-mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--cream);
+    border: 3px solid transparent;
+  }
+  .pg-card.given { background: var(--panel); }
+  .pg-card.blank {
+    border-style: dashed;
+    border-color: var(--panel-edge);
+    cursor: pointer;
+  }
+  .pg-card.blank.filled { border-style: solid; border-color: var(--cream-dim); }
+  .pg-card.blank.selected { border-color: var(--sun); border-style: solid; }
+  .pg-card.blank.correct { border-style: solid; border-color: var(--mint); background: rgba(61, 220, 151, 0.15); }
+  .pg-card.blank.incorrect { border-style: solid; border-color: var(--coral); background: rgba(255, 107, 106, 0.15); }
+  .pg-card input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    text-align: center;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--cream);
+  }
+  .pg-palette-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .pg-palette-label {
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--cream-dim);
+  }
+  .pg-palette-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pg-palette-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--bg-mid);
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pg-palette-btn:hover { border-color: var(--panel-edge); }
+
+  /* ---- Card Match ---- */
+  .cm-scoreboard {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cm-score-chip {
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--cream-dim);
+  }
+  .cm-score-chip.active { border-color: var(--sun); color: var(--cream); }
+  .cm-grid {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    max-width: 480px;
+  }
+  .cm-card {
+    aspect-ratio: 1 / 1;
+    perspective: 400px;
+    cursor: pointer;
+  }
+  .cm-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 220ms ease;
+  }
+  .cm-card.flipped .cm-card-inner { transform: rotateY(180deg); }
+  .cm-card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60%;
+  }
+  .cm-card-face.back {
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    color: var(--cream-dim);
+    font-size: 90%;
+  }
+  .cm-card-face.front {
+    background: var(--bg-mid);
+    transform: rotateY(180deg);
+  }
+  .cm-card.matched .cm-card-face.front { background: rgba(61, 220, 151, 0.2); border: 2px solid var(--mint); }
+
+  /* ---- Spot It ---- */
+  .si-areas {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .si-circle {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 3px solid var(--panel-edge);
+  }
+  .si-icon {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 8px;
+  }
+  .si-icon.wrong-flash { animation: si-shake 300ms; background: rgba(255, 107, 106, 0.35); }
+  @keyframes si-shake {
+    0%, 100% { transform: translate(-50%, -50%); }
+    25% { transform: translate(-58%, -50%); }
+    75% { transform: translate(-42%, -50%); }
+  }
+
+  /* ---- Subitize ---- */
+  .sb-grid {
+    display: grid;
+    gap: 8px;
+    justify-content: center;
+    align-content: center;
+    width: fit-content;
+    margin: 0 auto;
+  }
+  .sb-cell {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+  .sb-answers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .sb-answer-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--bg-mid);
+    border: none;
+    color: var(--cream);
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .sb-answer-btn.wrong-flash { animation: sb-shake 300ms; background: rgba(255, 107, 106, 0.5); }
+  .sb-answer-btn.correct { background: var(--mint); color: var(--bg-deep); }
+  @keyframes sb-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
 </style>
 </head>
 <body>
@@ -581,8 +787,10 @@ const GAMES = [
   { id: 'pacman',      name: 'Banana Chase',     icon: '🐒', color: 'tangerine', ready: true, init: initBananaChase },
   { id: 'dice',        name: 'Animal Yum',       icon: '🐾', color: 'coral',     ready: true, init: initAnimalYum },
   { id: 'fishsticks',  name: 'Fish Sticks',      icon: '🐟', color: 'sky',       ready: true, init: initFishSticks },
-  { id: 'pattern',     name: 'Pattern Game',     icon: '✨', color: 'sun',       ready: false },
-  { id: 'cardmatch',   name: 'Card Match',       icon: '🃏', color: 'grape',     ready: false },
+  { id: 'pattern',     name: 'Pattern Game',     icon: '✨', color: 'sun',       ready: true, init: initPatternGame },
+  { id: 'cardmatch',   name: 'Card Match',       icon: '🃏', color: 'grape',     ready: true, init: initCardMatch },
+  { id: 'spotit',      name: 'Spot It',          icon: '🔍', color: 'sky',       ready: true, init: initSpotIt },
+  { id: 'subitize',    name: 'Subitize',         icon: '🔢', color: 'mint',      ready: true, init: initSubitize },
 ];
 
 const COLOR_VARS = {
@@ -3136,6 +3344,930 @@ function initAnimalYum(container) {
       totalEls[p].textContent = totalFor(players[p]);
     }
   }
+}
+
+/* =========================================================
+   PATTERN GAME
+   Six categories share two underlying generator strategies:
+   - Colors / Shapes / Colors & Shapes are repeating patterns
+     (a short "unit" tiled across the sequence) - this is what
+     naturally produces genuine dead-give-away cycles for kids
+     to spot, and Colors & Shapes on Hard uses two independently
+     cycling attributes (period 2 for color, period 3 for shape)
+     so the combined period is 6, which is meaningfully harder
+     to spot than a single repeating unit.
+   - Numbers / Letters / Numbers & Letters are arithmetic
+     sequences (a start value plus a constant step - "counting
+     by 2s, 5s", etc.), with Letters walking the alphabet by
+     that same step and Numbers & Letters interleaving two
+     independent arithmetic sequences token-by-token.
+   Colors/Shapes/Colors&Shapes use a click-a-blank-then-click-
+   the-palette interaction; the text-based categories use plain
+   inline inputs, since typing a number or letter is easier for
+   most kids than picking it out of a large abstract palette.
+   ========================================================= */
+const PG_COLORS = [
+  { id: 'red', hex: '#ff6b6a' },
+  { id: 'yellow', hex: '#ffc93c' },
+  { id: 'green', hex: '#3ddc97' },
+  { id: 'blue', hex: '#4fc3f7' },
+  { id: 'purple', hex: '#b673f5' },
+  { id: 'orange', hex: '#ff9f4a' },
+];
+const PG_SHAPES = ['circle', 'square', 'triangle', 'star', 'diamond', 'hexagon'];
+const PG_SHAPE_MARKUP = {
+  circle: '<circle cx="50" cy="50" r="40"/>',
+  square: '<rect x="14" y="14" width="72" height="72" rx="10"/>',
+  triangle: '<polygon points="50,12 90,85 10,85"/>',
+  star: '<polygon points="50,6 61,36 94,36 67,55 78,88 50,68 22,88 33,55 6,36 39,36"/>',
+  diamond: '<polygon points="50,8 92,50 50,92 8,50"/>',
+  hexagon: '<polygon points="26,10 74,10 96,50 74,90 26,90 4,50"/>',
+};
+const PG_CATEGORIES = [
+  { id: 'colors', label: 'Colors' },
+  { id: 'shapes', label: 'Shapes' },
+  { id: 'colorsShapes', label: 'Colors & Shapes' },
+  { id: 'numbers', label: 'Numbers' },
+  { id: 'letters', label: 'Letters' },
+  { id: 'numbersLetters', label: 'Numbers & Letters' },
+];
+const PG_DIFFICULTY = {
+  easy:   { repeatUnit: 2, repeatGivensMult: 2, repeatBlanks: 2, arithGivens: 4, arithBlanks: 2, numberSteps: [1, 2, 5, 10], letterSteps: [1, 2] },
+  medium: { repeatUnit: 3, repeatGivensMult: 2, repeatBlanks: 3, arithGivens: 5, arithBlanks: 3, numberSteps: [2, 3, 4, 5, 10], letterSteps: [1, 2, 3] },
+  hard:   { repeatUnit: 4, repeatGivensMult: 2, repeatBlanks: 4, arithGivens: 5, arithBlanks: 4, numberSteps: [-10, -5, -3, -2, 2, 3, 4, 7, 10], letterSteps: [1, 2, 3, -1, -2, -3], comboIndependent: true, comboLc: 2, comboLs: 3 },
+};
+
+function initPatternGame(container) {
+  let category = 'colors';
+  let difficulty = 'easy';
+  let tokens = [];
+  let givensCount = 0;
+  let answers = [];
+  let checked = false;
+  let solvedCount = 0;
+  let selectedBlank = null;
+
+  const wrap = document.createElement('div');
+
+  const catRow = document.createElement('div');
+  catRow.className = 'chip-toggle';
+  const catBtns = {};
+  PG_CATEGORIES.forEach(c => {
+    const btn = makeChip(c.label, () => setCategory(c.id));
+    catBtns[c.id] = btn;
+    catRow.appendChild(btn);
+  });
+  wrap.appendChild(catRow);
+
+  const diffRow = document.createElement('div');
+  diffRow.className = 'chip-toggle';
+  const diffBtns = {};
+  ['easy', 'medium', 'hard'].forEach(d => {
+    const btn = makeChip(d[0].toUpperCase() + d.slice(1), () => setDifficulty(d));
+    diffBtns[d] = btn;
+    diffRow.appendChild(btn);
+  });
+  wrap.appendChild(diffRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+  panel.appendChild(status);
+
+  const statsEl = document.createElement('div');
+  statsEl.className = 'maze-stats';
+  panel.appendChild(statsEl);
+
+  const sequenceEl = document.createElement('div');
+  sequenceEl.className = 'pg-sequence';
+  panel.appendChild(sequenceEl);
+
+  const paletteArea = document.createElement('div');
+  paletteArea.style.display = 'flex';
+  paletteArea.style.gap = '20px';
+  paletteArea.style.flexWrap = 'wrap';
+  paletteArea.style.justifyContent = 'center';
+  panel.appendChild(paletteArea);
+
+  const checkBtn = document.createElement('button');
+  checkBtn.className = 'primary-btn';
+  checkBtn.textContent = 'Check Pattern';
+  checkBtn.addEventListener('click', checkPattern);
+  panel.appendChild(checkBtn);
+
+  const revealBtn = document.createElement('button');
+  revealBtn.className = 'chip-btn';
+  revealBtn.textContent = 'Show Answer';
+  revealBtn.addEventListener('click', revealAnswer);
+  panel.appendChild(revealBtn);
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'primary-btn';
+  nextBtn.textContent = 'Next Pattern';
+  nextBtn.style.display = 'none';
+  nextBtn.addEventListener('click', newPattern);
+  panel.appendChild(nextBtn);
+
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function setCategory(c) {
+    category = c;
+    Object.entries(catBtns).forEach(([k, btn]) => btn.classList.toggle('active', k === c));
+    newPattern();
+  }
+
+  function setDifficulty(d) {
+    difficulty = d;
+    Object.entries(diffBtns).forEach(([k, btn]) => btn.classList.toggle('active', k === d));
+    newPattern();
+  }
+
+  function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
+  function colorHex(id) { return PG_COLORS.find(c => c.id === id).hex; }
+
+  function shapeMarkup(shapeId, fillHex, size) {
+    const shape = PG_SHAPE_MARKUP[shapeId].replace('/>', ` fill="${fillHex}"/>`);
+    return `<svg viewBox="0 0 100 100" width="${size}" height="${size}">${shape}</svg>`;
+  }
+
+  function isPaletteCategory() {
+    return category === 'colors' || category === 'shapes' || category === 'colorsShapes';
+  }
+
+  // ---- Pattern generators ----
+  function genRepeatingTokens(pool, unitLen, totalLen) {
+    let unit;
+    do {
+      unit = Array.from({ length: unitLen }, () => pickRandom(pool));
+    } while (unitLen > 1 && new Set(unit).size < 2);
+    return Array.from({ length: totalLen }, (_, i) => unit[i % unitLen]);
+  }
+
+  function genLetterIndices(stepOptions, totalLen) {
+    const step = pickRandom(stepOptions);
+    const span = Math.abs(step) * (totalLen - 1);
+    const start = step >= 0 ? randInt(0, 25 - span) : randInt(span, 25);
+    return Array.from({ length: totalLen }, (_, i) => start + i * step);
+  }
+
+  function generatePattern() {
+    const cfg = PG_DIFFICULTY[difficulty];
+    let seq = [], givens = 0;
+
+    if (category === 'colors') {
+      givens = cfg.repeatUnit * cfg.repeatGivensMult;
+      seq = genRepeatingTokens(PG_COLORS.map(c => c.id), cfg.repeatUnit, givens + cfg.repeatBlanks);
+    } else if (category === 'shapes') {
+      givens = cfg.repeatUnit * cfg.repeatGivensMult;
+      seq = genRepeatingTokens(PG_SHAPES, cfg.repeatUnit, givens + cfg.repeatBlanks);
+    } else if (category === 'colorsShapes') {
+      givens = cfg.repeatUnit * cfg.repeatGivensMult;
+      const total = givens + cfg.repeatBlanks;
+      if (cfg.comboIndependent) {
+        const colorSeq = genRepeatingTokens(PG_COLORS.map(c => c.id), cfg.comboLc, total);
+        const shapeSeq = genRepeatingTokens(PG_SHAPES, cfg.comboLs, total);
+        seq = colorSeq.map((c, i) => ({ color: c, shape: shapeSeq[i] }));
+      } else {
+        let unit;
+        do {
+          unit = Array.from({ length: cfg.repeatUnit }, () => ({ color: pickRandom(PG_COLORS).id, shape: pickRandom(PG_SHAPES) }));
+        } while (new Set(unit.map(u => u.color + u.shape)).size < 2);
+        seq = Array.from({ length: total }, (_, i) => unit[i % cfg.repeatUnit]);
+      }
+    } else if (category === 'numbers') {
+      givens = cfg.arithGivens;
+      const step = pickRandom(cfg.numberSteps);
+      const start = randInt(1, 20);
+      seq = Array.from({ length: givens + cfg.arithBlanks }, (_, i) => start + i * step);
+    } else if (category === 'letters') {
+      givens = cfg.arithGivens;
+      const indices = genLetterIndices(cfg.letterSteps, givens + cfg.arithBlanks);
+      seq = indices.map(i => String.fromCharCode(65 + i));
+    } else if (category === 'numbersLetters') {
+      givens = cfg.arithGivens;
+      const total = givens + cfg.arithBlanks;
+      const pairsCount = Math.ceil(total / 2);
+      const letters = genLetterIndices(cfg.letterSteps, pairsCount).map(i => String.fromCharCode(65 + i));
+      const numStep = pickRandom(cfg.numberSteps);
+      const numStart = randInt(1, 20);
+      const numbers = Array.from({ length: pairsCount }, (_, i) => numStart + i * numStep);
+      seq = Array.from({ length: total }, (_, i) => (i % 2 === 0 ? letters[i / 2] : numbers[(i - 1) / 2]));
+    }
+
+    tokens = seq;
+    givensCount = givens;
+  }
+
+  function newPattern() {
+    generatePattern();
+    const blanksCount = tokens.length - givensCount;
+    answers = Array.from({ length: blanksCount }, () => (isPaletteCategory() ? { color: null, shape: null } : ''));
+    checked = false;
+    selectedBlank = isPaletteCategory() ? 0 : null;
+    checkBtn.style.display = '';
+    revealBtn.style.display = '';
+    nextBtn.style.display = 'none';
+    status.textContent = isPaletteCategory()
+      ? `Figure out the pattern, then fill in the last ${blanksCount} card${blanksCount > 1 ? 's' : ''} using the buttons below.`
+      : `Figure out the pattern, then type the next ${blanksCount} value${blanksCount > 1 ? 's' : ''}.`;
+    renderSequence();
+    renderPalette();
+    updateStats();
+  }
+
+  function updateStats() {
+    statsEl.textContent = `Patterns solved: ${solvedCount}`;
+  }
+
+  // ---- Rendering ----
+  function renderSequence() {
+    sequenceEl.innerHTML = '';
+    tokens.forEach((val, i) => {
+      const card = document.createElement('div');
+      if (i < givensCount) {
+        card.className = 'pg-card given';
+        fillGivenCard(card, val);
+      } else {
+        const blankIdx = i - givensCount;
+        card.className = 'pg-card blank';
+        if (isPaletteCategory()) {
+          if (blankIdx === selectedBlank && !checked) card.classList.add('selected');
+          const ans = answers[blankIdx];
+          if (ans.color || ans.shape) card.classList.add('filled');
+          fillAnswerCardVisual(card, ans);
+          card.addEventListener('click', () => {
+            if (checked) return;
+            selectedBlank = blankIdx;
+            renderSequence();
+          });
+        } else {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.maxLength = category === 'letters' ? 1 : 4;
+          input.value = answers[blankIdx];
+          input.disabled = checked;
+          input.addEventListener('input', () => { answers[blankIdx] = input.value; });
+          card.appendChild(input);
+        }
+      }
+      sequenceEl.appendChild(card);
+    });
+    if (checked) applyCorrectness();
+  }
+
+  function fillGivenCard(card, val) {
+    if (category === 'colors') card.innerHTML = shapeMarkup('circle', colorHex(val), 30);
+    else if (category === 'shapes') card.innerHTML = shapeMarkup(val, '#fdfbf7', 30);
+    else if (category === 'colorsShapes') card.innerHTML = shapeMarkup(val.shape, colorHex(val.color), 30);
+    else card.textContent = val;
+  }
+
+  function fillAnswerCardVisual(card, ans) {
+    if (category === 'colors') {
+      card.innerHTML = ans.color ? shapeMarkup('circle', colorHex(ans.color), 30) : '';
+    } else if (category === 'shapes') {
+      card.innerHTML = ans.shape ? shapeMarkup(ans.shape, '#fdfbf7', 30) : '';
+    } else if (category === 'colorsShapes') {
+      if (ans.color && ans.shape) card.innerHTML = shapeMarkup(ans.shape, colorHex(ans.color), 30);
+      else if (ans.color) card.innerHTML = shapeMarkup('circle', colorHex(ans.color), 20);
+      else if (ans.shape) card.innerHTML = shapeMarkup(ans.shape, '#fdfbf7', 20);
+      else card.innerHTML = '';
+    }
+  }
+
+  function renderPalette() {
+    paletteArea.innerHTML = '';
+    if (!isPaletteCategory()) return;
+
+    if (category === 'colors' || category === 'colorsShapes') {
+      paletteArea.appendChild(buildPaletteGroup('Colors', PG_COLORS.map(c => ({
+        key: c.id, markup: shapeMarkup('circle', c.hex, 24), onClick: () => assignToSelected({ color: c.id }),
+      }))));
+    }
+    if (category === 'shapes' || category === 'colorsShapes') {
+      paletteArea.appendChild(buildPaletteGroup('Shapes', PG_SHAPES.map(s => ({
+        key: s, markup: shapeMarkup(s, '#fdfbf7', 24), onClick: () => assignToSelected({ shape: s }),
+      }))));
+    }
+  }
+
+  function buildPaletteGroup(labelText, items) {
+    const group = document.createElement('div');
+    group.className = 'pg-palette-group';
+    const label = document.createElement('div');
+    label.className = 'pg-palette-label';
+    label.textContent = labelText;
+    const row = document.createElement('div');
+    row.className = 'pg-palette-row';
+    items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'pg-palette-btn';
+      btn.innerHTML = item.markup;
+      btn.addEventListener('click', item.onClick);
+      row.appendChild(btn);
+    });
+    group.appendChild(label);
+    group.appendChild(row);
+    return group;
+  }
+
+  function assignToSelected(partial) {
+    if (checked || selectedBlank === null) return;
+    answers[selectedBlank] = Object.assign({}, answers[selectedBlank], partial);
+    const blanksCount = tokens.length - givensCount;
+    const ans = answers[selectedBlank];
+    const readyToAdvance = category === 'colorsShapes' ? !!(ans.color && ans.shape) : true;
+    if (readyToAdvance && selectedBlank < blanksCount - 1) {
+      selectedBlank++;
+    }
+    renderSequence();
+  }
+
+  // ---- Checking ----
+  function isBlankCorrect(blankIdx) {
+    const expected = tokens[givensCount + blankIdx];
+    if (category === 'colors') return answers[blankIdx].color === expected;
+    if (category === 'shapes') return answers[blankIdx].shape === expected;
+    if (category === 'colorsShapes') return answers[blankIdx].color === expected.color && answers[blankIdx].shape === expected.shape;
+    const typed = String(answers[blankIdx]).trim().toUpperCase();
+    return typed !== '' && typed === String(expected).trim().toUpperCase();
+  }
+
+  function applyCorrectness() {
+    const cards = sequenceEl.children;
+    for (let i = givensCount; i < tokens.length; i++) {
+      const card = cards[i];
+      card.classList.remove('selected');
+      const ok = isBlankCorrect(i - givensCount);
+      card.classList.toggle('correct', ok);
+      card.classList.toggle('incorrect', !ok);
+    }
+  }
+
+  function checkPattern() {
+    const blanksCount = tokens.length - givensCount;
+    let allCorrect = true;
+    for (let i = 0; i < blanksCount; i++) {
+      if (!isBlankCorrect(i)) allCorrect = false;
+    }
+    checked = true;
+    renderSequence();
+
+    if (allCorrect) {
+      solvedCount++;
+      updateStats();
+      status.textContent = 'Great job! You solved it! 🎉';
+      checkBtn.style.display = 'none';
+      revealBtn.style.display = 'none';
+      nextBtn.style.display = '';
+    } else {
+      status.textContent = 'Not quite — the highlighted cards need another look. Fix them and check again!';
+      checked = false;
+      renderSequence();
+      applyCorrectness();
+    }
+  }
+
+  function revealAnswer() {
+    for (let i = givensCount; i < tokens.length; i++) {
+      const blankIdx = i - givensCount, val = tokens[i];
+      if (category === 'colors') answers[blankIdx] = { color: val, shape: null };
+      else if (category === 'shapes') answers[blankIdx] = { color: null, shape: val };
+      else if (category === 'colorsShapes') answers[blankIdx] = { color: val.color, shape: val.shape };
+      else answers[blankIdx] = String(val);
+    }
+    checked = true;
+    renderSequence();
+    status.textContent = "Here's the full pattern — take a look, then try a new one!";
+    checkBtn.style.display = 'none';
+    revealBtn.style.display = 'none';
+    nextBtn.style.display = '';
+  }
+
+  setCategory('colors');
+  setDifficulty('easy');
+}
+
+/* =========================================================
+   CARD MATCH
+   Classic memory-matching game. Supports 1-4 players and
+   three difficulty levels that control grid size (and
+   therefore how many pairs are in play). Matching a pair
+   keeps the current player's turn; a miss passes the turn to
+   the next player.
+   ========================================================= */
+const CM_ICONS = ['🐵', '🐶', '🐱', '🦁', '🐸', '🐼', '🦊', '🐰', '🐻', '🐨', '🐯', '🦄', '🐷', '🐮', '🐔', '🐧', '🦋', '🐝', '🐢', '🐙', '🍎', '🍌', '🍇', '🍉', '🍓', '🍒', '🍍', '🥕', '🌟', '⚽'];
+const CM_DIFFICULTY = {
+  easy: { pairs: 10, cols: 5 },
+  medium: { pairs: 18, cols: 6 },
+  hard: { pairs: 28, cols: 8 },
+};
+
+function initCardMatch(container) {
+  let numPlayers = 2;
+  let difficulty = 'easy';
+  let cards, flipped, matchedCount, current, players, moves, locked, gameOver;
+  const cardEls = [];
+
+  const wrap = document.createElement('div');
+
+  const countRow = document.createElement('div');
+  countRow.className = 'chip-toggle';
+  const countBtns = {};
+  [1, 2, 3, 4].forEach(n => {
+    const btn = makeChip(n === 1 ? '1 Player' : `${n} Players`, () => setPlayerCount(n));
+    countBtns[n] = btn;
+    countRow.appendChild(btn);
+  });
+  wrap.appendChild(countRow);
+
+  const diffRow = document.createElement('div');
+  diffRow.className = 'chip-toggle';
+  const diffBtns = {};
+  ['easy', 'medium', 'hard'].forEach(d => {
+    const btn = makeChip(d[0].toUpperCase() + d.slice(1), () => setDifficulty(d));
+    diffBtns[d] = btn;
+    diffRow.appendChild(btn);
+  });
+  wrap.appendChild(diffRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+  panel.appendChild(status);
+
+  const stats = document.createElement('div');
+  stats.className = 'maze-stats';
+  panel.appendChild(stats);
+
+  const scoreboard = document.createElement('div');
+  scoreboard.className = 'cm-scoreboard';
+  panel.appendChild(scoreboard);
+
+  const grid = document.createElement('div');
+  grid.className = 'cm-grid';
+  panel.appendChild(grid);
+
+  const newGameBtn = document.createElement('button');
+  newGameBtn.className = 'primary-btn';
+  newGameBtn.textContent = 'New game';
+  newGameBtn.addEventListener('click', resetGame);
+  panel.appendChild(newGameBtn);
+
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function setPlayerCount(n) {
+    numPlayers = n;
+    Object.entries(countBtns).forEach(([k, btn]) => btn.classList.toggle('active', Number(k) === n));
+    resetGame();
+  }
+
+  function setDifficulty(d) {
+    difficulty = d;
+    Object.entries(diffBtns).forEach(([k, btn]) => btn.classList.toggle('active', k === d));
+    resetGame();
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function resetGame() {
+    const cfg = CM_DIFFICULTY[difficulty];
+    const icons = CM_ICONS.slice(0, cfg.pairs);
+    cards = shuffle(icons.concat(icons)).map(icon => ({ icon, flipped: false, matched: false }));
+
+    grid.style.gridTemplateColumns = `repeat(${cfg.cols}, 1fr)`;
+    grid.innerHTML = '';
+    cardEls.length = 0;
+    cards.forEach((c, i) => {
+      const card = document.createElement('div');
+      card.className = 'cm-card';
+      card.innerHTML = `
+        <div class="cm-card-inner">
+          <div class="cm-card-face back">❔</div>
+          <div class="cm-card-face front">${c.icon}</div>
+        </div>
+      `;
+      card.addEventListener('click', () => handleCardClick(i));
+      grid.appendChild(card);
+      cardEls.push(card);
+    });
+
+    players = Array.from({ length: numPlayers }, (_, i) => ({ name: `Player ${i + 1}`, pairs: 0 }));
+    flipped = [];
+    matchedCount = 0;
+    current = 0;
+    moves = 0;
+    locked = false;
+    gameOver = false;
+    updateStatus();
+    updateStats();
+    renderScoreboard();
+
+    // Card size varies a lot between difficulties (5 vs 8 columns), so the
+    // icon font-size is computed from the actual rendered card width rather
+    // than a fixed value, otherwise Hard's smaller cards would look fine
+    // while Easy/Medium's larger cards left the icon looking tiny.
+    requestAnimationFrame(() => {
+      const cardSize = grid.clientWidth / cfg.cols;
+      cardEls.forEach(card => {
+        card.querySelectorAll('.cm-card-face').forEach(face => {
+          face.style.fontSize = Math.floor(cardSize * 0.55) + 'px';
+        });
+      });
+    });
+  }
+  diffBtns.easy.classList.add('active');
+  setPlayerCount(2);
+
+  function updateStatus() {
+    if (gameOver) return;
+    status.textContent = numPlayers === 1
+      ? 'Find all the matching pairs!'
+      : `${players[current].name}'s turn — find a matching pair!`;
+  }
+
+  function updateStats() {
+    stats.textContent = `Moves: ${moves}`;
+  }
+
+  function renderScoreboard() {
+    scoreboard.innerHTML = '';
+    if (numPlayers === 1) return;
+    players.forEach((p, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'cm-score-chip' + (i === current && !gameOver ? ' active' : '');
+      chip.textContent = `${p.name}: ${p.pairs} 🃏`;
+      scoreboard.appendChild(chip);
+    });
+  }
+
+  function handleCardClick(i) {
+    if (locked || gameOver) return;
+    const c = cards[i];
+    if (c.flipped || c.matched) return;
+    if (flipped.length === 2) return;
+
+    c.flipped = true;
+    cardEls[i].classList.add('flipped');
+    flipped.push(i);
+
+    if (flipped.length === 2) {
+      moves++;
+      updateStats();
+      const [a, b] = flipped;
+      if (cards[a].icon === cards[b].icon) {
+        cards[a].matched = true;
+        cards[b].matched = true;
+        cardEls[a].classList.add('matched');
+        cardEls[b].classList.add('matched');
+        matchedCount++;
+        players[current].pairs++;
+        flipped = [];
+        renderScoreboard();
+        if (matchedCount === CM_DIFFICULTY[difficulty].pairs) {
+          endGame();
+        } else {
+          status.textContent = numPlayers === 1
+            ? 'Match! Keep going!'
+            : `${players[current].name} found a match — go again!`;
+        }
+      } else {
+        locked = true;
+        status.textContent = "No match — remember where these were!";
+        setTimeout(() => {
+          cards[a].flipped = false;
+          cards[b].flipped = false;
+          cardEls[a].classList.remove('flipped');
+          cardEls[b].classList.remove('flipped');
+          flipped = [];
+          locked = false;
+          current = (current + 1) % numPlayers;
+          updateStatus();
+          renderScoreboard();
+        }, 900);
+      }
+    }
+  }
+
+  function endGame() {
+    gameOver = true;
+    if (numPlayers === 1) {
+      status.textContent = `You matched all the pairs in ${moves} moves! 🎉`;
+    } else {
+      const best = Math.max(...players.map(p => p.pairs));
+      const winners = players.filter(p => p.pairs === best);
+      status.textContent = winners.length > 1
+        ? `It's a tie between ${winners.map(w => w.name).join(' and ')} with ${best} pairs!`
+        : `${winners[0].name} wins with ${best} pairs! 🎉`;
+    }
+    renderScoreboard();
+  }
+}
+
+/* =========================================================
+   SPOT IT
+   Two circular play areas each show 8 icons; exactly one icon
+   appears in both. Timer starts the moment a round is shown
+   and stops the instant the player clicks a correct occurrence
+   in either area - clicking just one instance is enough to
+   register the match, they don't need to find both.
+   ========================================================= */
+const SI_ICONS = ['🐵', '🐶', '🐱', '🦁', '🐸', '🐼', '🦊', '🐰', '🍎', '🍌', '🍇', '⚽', '🎈', '🌟', '❤️', '🎵', '🚗', '✈️', '🌈', '☀️', '🌙', '🍕', '🎂', '🐠'];
+
+function initSpotIt(container) {
+  let areaA, areaB, sharedIcon;
+  let startTime, fastest = null, totalTime = 0, roundsPlayed = 0, roundActive = false;
+
+  const wrap = document.createElement('div');
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+  panel.appendChild(status);
+
+  const stats = document.createElement('div');
+  stats.className = 'maze-stats';
+  panel.appendChild(stats);
+
+  const areasEl = document.createElement('div');
+  areasEl.className = 'si-areas';
+  const circleA = document.createElement('div');
+  circleA.className = 'si-circle';
+  const circleB = document.createElement('div');
+  circleB.className = 'si-circle';
+  areasEl.appendChild(circleA);
+  areasEl.appendChild(circleB);
+  panel.appendChild(areasEl);
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'primary-btn';
+  nextBtn.textContent = 'Next Round';
+  nextBtn.style.display = 'none';
+  nextBtn.addEventListener('click', newRound);
+  panel.appendChild(nextBtn);
+
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function updateStats() {
+    const fastestText = fastest === null ? '–' : (fastest / 1000).toFixed(2) + 's';
+    const avgText = roundsPlayed === 0 ? '–' : (totalTime / roundsPlayed / 1000).toFixed(2) + 's';
+    stats.textContent = `Rounds: ${roundsPlayed} | Fastest: ${fastestText} | Average: ${avgText}`;
+  }
+
+  function layoutCircle(circleEl, icons, isCorrect) {
+    circleEl.innerHTML = '';
+    const n = icons.length;
+    icons.forEach((icon, i) => {
+      const angle = (i / n) * 2 * Math.PI + (Math.random() - 0.5) * 0.15;
+      const radius = 78 + (Math.random() - 0.5) * 14;
+      const x = 110 + radius * Math.cos(angle);
+      const y = 110 + radius * Math.sin(angle);
+      const btn = document.createElement('button');
+      btn.className = 'si-icon';
+      btn.style.left = x + 'px';
+      btn.style.top = y + 'px';
+      btn.style.fontSize = (26 + Math.random() * 10) + 'px';
+      btn.textContent = icon;
+      btn.addEventListener('click', () => handlePick(icon, btn));
+      circleEl.appendChild(btn);
+    });
+  }
+
+  function newRound() {
+    const pool = shuffle(SI_ICONS);
+    sharedIcon = pool[0];
+    const exclusiveA = pool.slice(1, 8);
+    const exclusiveB = pool.slice(8, 15);
+    areaA = shuffle(exclusiveA.concat([sharedIcon]));
+    areaB = shuffle(exclusiveB.concat([sharedIcon]));
+
+    layoutCircle(circleA, areaA);
+    layoutCircle(circleB, areaB);
+
+    nextBtn.style.display = 'none';
+    status.textContent = 'Click the icon that appears in BOTH circles!';
+    roundActive = true;
+    startTime = performance.now();
+  }
+
+  function handlePick(icon, btnEl) {
+    if (!roundActive) return;
+    if (icon === sharedIcon) {
+      const elapsed = performance.now() - startTime;
+      roundActive = false;
+      roundsPlayed++;
+      totalTime += elapsed;
+      if (fastest === null || elapsed < fastest) fastest = elapsed;
+      updateStats();
+      status.textContent = `Found it in ${(elapsed / 1000).toFixed(2)}s! 🎉`;
+      nextBtn.style.display = '';
+    } else {
+      btnEl.classList.remove('wrong-flash');
+      void btnEl.offsetWidth;
+      btnEl.classList.add('wrong-flash');
+    }
+  }
+
+  updateStats();
+  newRound();
+}
+
+/* =========================================================
+   SUBITIZE
+   Shows a random number of identical icons arranged in a
+   recognizable grouping (classic dice-pip layouts for 1-6,
+   a five-per-row "ten frame" style grid beyond that - the
+   same grouping-by-5s approach used in early math education,
+   which is what makes larger counts fast to recognize at a
+   glance rather than requiring one-by-one counting). The
+   player picks the matching number from a button row; timer
+   runs from the moment the icons appear until a correct pick.
+   ========================================================= */
+const SB_ICONS = ['⭐', '🔴', '❤️', '🍎', '🔵', '🟢', '⚫', '🟡'];
+const SB_DIFFICULTY = { easy: 6, medium: 10, hard: 15 };
+const SB_DICE_LAYOUT = {
+  1: [[1, 1]],
+  2: [[0, 0], [2, 2]],
+  3: [[0, 0], [1, 1], [2, 2]],
+  4: [[0, 0], [0, 2], [2, 0], [2, 2]],
+  5: [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]],
+  6: [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]],
+};
+
+function initSubitize(container) {
+  let difficulty = 'easy';
+  let target, lastTarget = null, roundActive, startTime, fastest = null, totalTime = 0, roundsPlayed = 0;
+
+  const wrap = document.createElement('div');
+
+  const diffRow = document.createElement('div');
+  diffRow.className = 'chip-toggle';
+  const diffBtns = {};
+  ['easy', 'medium', 'hard'].forEach(d => {
+    const btn = makeChip(d[0].toUpperCase() + d.slice(1), () => setDifficulty(d));
+    diffBtns[d] = btn;
+    diffRow.appendChild(btn);
+  });
+  wrap.appendChild(diffRow);
+
+  const panel = document.createElement('div');
+  panel.className = 'game-panel';
+
+  const status = document.createElement('div');
+  status.className = 'status-line';
+  panel.appendChild(status);
+
+  const stats = document.createElement('div');
+  stats.className = 'maze-stats';
+  panel.appendChild(stats);
+
+  const grid = document.createElement('div');
+  grid.className = 'sb-grid';
+  panel.appendChild(grid);
+
+  const answers = document.createElement('div');
+  answers.className = 'sb-answers';
+  panel.appendChild(answers);
+
+  wrap.appendChild(panel);
+  container.appendChild(wrap);
+
+  function makeChip(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'chip-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function setDifficulty(d) {
+    difficulty = d;
+    Object.entries(diffBtns).forEach(([k, btn]) => btn.classList.toggle('active', k === d));
+    newRound();
+  }
+
+  function updateStats() {
+    const fastestText = fastest === null ? '–' : (fastest / 1000).toFixed(2) + 's';
+    const avgText = roundsPlayed === 0 ? '–' : (totalTime / roundsPlayed / 1000).toFixed(2) + 's';
+    stats.textContent = `Rounds: ${roundsPlayed} | Fastest: ${fastestText} | Average: ${avgText}`;
+  }
+
+  function renderGrid(n, icon) {
+    grid.innerHTML = '';
+    const useDice = difficulty === 'easy';
+    if (useDice) {
+      grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      grid.style.gridTemplateRows = 'repeat(3, 1fr)';
+      const cells = Array.from({ length: 9 }, () => null);
+      SB_DICE_LAYOUT[n].forEach(([r, c]) => { cells[r * 3 + c] = icon; });
+      cells.forEach(content => {
+        const cell = document.createElement('div');
+        cell.className = 'sb-cell';
+        cell.textContent = content || '';
+        grid.appendChild(cell);
+      });
+    } else {
+      // Fixed row count per difficulty (not derived from n) so the grid's
+      // height never changes round to round, keeping the answer buttons
+      // below it in a constant position.
+      const rows = SB_DIFFICULTY[difficulty] / 5;
+      grid.style.gridTemplateColumns = 'repeat(5, 1fr)';
+      grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+      for (let i = 0; i < rows * 5; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'sb-cell';
+        cell.textContent = i < n ? icon : '';
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function renderAnswers(max) {
+    answers.innerHTML = '';
+    for (let i = 1; i <= max; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'sb-answer-btn';
+      btn.textContent = i;
+      btn.addEventListener('click', () => handlePick(i, btn));
+      answers.appendChild(btn);
+    }
+  }
+
+  function newRound() {
+    const max = SB_DIFFICULTY[difficulty];
+    do {
+      target = 1 + Math.floor(Math.random() * max);
+    } while (target === lastTarget && max > 1);
+    lastTarget = target;
+    const icon = SB_ICONS[Math.floor(Math.random() * SB_ICONS.length)];
+    renderGrid(target, icon);
+    renderAnswers(max);
+    status.textContent = 'How many do you see?';
+    roundActive = true;
+    startTime = performance.now();
+  }
+
+  function handlePick(n, btnEl) {
+    if (!roundActive) return;
+    if (n === target) {
+      const elapsed = performance.now() - startTime;
+      roundActive = false;
+      roundsPlayed++;
+      totalTime += elapsed;
+      if (fastest === null || elapsed < fastest) fastest = elapsed;
+      updateStats();
+      status.textContent = `Correct — it was ${target}! (${(elapsed / 1000).toFixed(2)}s) 🎉`;
+      btnEl.classList.add('correct');
+      setTimeout(newRound, 900);
+    } else {
+      btnEl.classList.remove('wrong-flash');
+      void btnEl.offsetWidth;
+      btnEl.classList.add('wrong-flash');
+    }
+  }
+
+  setDifficulty('easy');
+  updateStats();
 }
 
 renderHub();
